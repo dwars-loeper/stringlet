@@ -151,7 +151,7 @@ is taken from the first parameter. For that it must be const, even if it is not 
 
 ## Todo
 
-- [x] `stringlet::error::Error` & `stringlet::Result`
+- [x] `stringlet::Result` & `stringlet::Error`
 
 - [x] Run `cargo llvm-cov` & `cargo crap` to ensure all code is tested
 

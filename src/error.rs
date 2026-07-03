@@ -25,7 +25,7 @@ mod tests {
     fn utf8_error() {
         #[allow(invalid_from_utf8)]
         let utf8_error: Error = str::from_utf8(&[0xff]).unwrap_err().into();
-        // todo new macro once we update to 1.96 for something else
+        // TODO new macro once we update to 1.96 for something else
         assert!(matches!(utf8_error, Error::Utf8Error(_)));
     }
 }

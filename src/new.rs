@@ -1,5 +1,7 @@
 //! Creation of stringlets, `new()` and `default()` panic at compile time, unless they make sence.
 
+use core::hint::{cold_path, unreachable_unchecked};
+
 use crate::*;
 
 impl<Kind: crate::Kind, const SIZE: usize> StringletBase<Kind, SIZE>
@@ -22,6 +24,7 @@ where
     }
 
     pub const fn from_str(str: &str) -> Result<Self> {
+        // TODO This should use `?`, once it's `const`
         match Self::fits(str.len()) {
             Ok(()) => {
                 // SAFETY we checked the length and got UTF-8
@@ -51,7 +54,7 @@ where
     ```
     */
     pub const fn from_utf8(str: &[u8]) -> Result<Self> {
-        // const equivalent of `expr?`
+        // TODO This should use `?`, once it's `const`
         match Self::fits(str.len()) {
             Ok(()) => {
                 match str::from_utf8(str) {
@@ -106,7 +109,7 @@ where
     ```
     */
     pub const fn from_utf8_bytes(str: [u8; SIZE]) -> Result<Self> {
-        // const equivalent of `expr?`
+        // TODO This should use `?`, once it's `const`
         match str::from_utf8(&str) {
             // SAFETY always short enough and no bytes have a UTF-8 error
             Ok(_) => Ok(unsafe { Self::from_utf8_bytes_unchecked(str) }),
@@ -148,7 +151,7 @@ where
     ```
     */
     pub const fn from_utf8_slice(str: &[u8; SIZE]) -> Result<Self> {
-        // const equivalent of `expr?`
+        // TODO This should use `?`, once it's `const`
         match str::from_utf8(str) {
             // SAFETY always short enough and no slice have a UTF-8 error
             Ok(str) => Ok(unsafe { Self::from_str_unchecked(str) }),
@@ -168,7 +171,7 @@ where
     It is the callers responsibility to ensure that the content is UTF-8. */
     #[must_use]
     pub const unsafe fn from_utf8_slice_unchecked(str: &[u8; SIZE]) -> Self {
-        // todo: is there a benefit in replicating the body to eliminate the reference?
+        // TODO is there a benefit in replicating the body to eliminate the reference?
         // SAFETY It is the callers responsibility to ensure that the content is UTF-8.
         unsafe { Self::from_utf8_unchecked(str) }
     }
@@ -193,7 +196,6 @@ where
             Ok(unsafe { Self::from_utf8_unchecked(str.as_slice()) })
             // The compiler ignores that we checked SIZE == SIZE2 and refuses this
             //Ok(unsafe { core::mem::transmute(str) })
-            //} else if !Kind2::VAR {
         } else {
             Self::from_str(str.as_str())
         }
@@ -204,24 +206,25 @@ where
     #[must_use]
     pub const fn _from_macro(str: &str) -> Self {
         match Self::fits(str.len()) {
-            // SAFETY we checked the length and got UTF-8
+            // SAFETY we checked the length
             Ok(()) => unsafe { Self::from_str_unchecked(str) },
             Err(TooLong) => panic!("stringlet!(...): parameter too long for its type."),
             Err(TooShort) => panic!("stringlet!(...): parameter too short for its type."),
-            Err(Utf8Error(_)) => unreachable!(),
+            // SAFETY fits() never returns this
+            Err(Utf8Error(_)) => unsafe { unreachable_unchecked() },
         }
     }
 
     pub(crate) const fn fits(len: usize) -> Result<()> {
-        if len > SIZE {
+        if Kind::FIXED && len == SIZE {
+            Ok(())
+        } else if len > SIZE {
+            cold_path();
             Err(TooLong)
-        } else if (Kind::FIXED && len == SIZE)
-            || Kind::VAR
-            || Kind::SLIM
-            || (Kind::TRIM && len >= const { SIZE.saturating_sub(1) })
-        {
+        } else if Kind::VAR || Kind::SLIM || Kind::TRIM && len >= const { SIZE.saturating_sub(1) } {
             Ok(())
         } else {
+            cold_path();
             Err(TooShort)
         }
     }
@@ -235,10 +238,12 @@ impl_for! {
     }
 }
 
-/* impl_for! {
+/* Without specialization, this causes a collision with the blanket impl in core:
+error[E0119]: conflicting implementations of trait `TryFrom<StringletBase<_, _>>` for type `StringletBase<_, _>`
+impl_for! {
     <Config, 2> TryFrom<self2!()>:
 
-    type Error = error::Error;
+    type Error = crate::Error;
 
     fn try_from(str: self2!()) -> Result<Self> {
         Self::from_str(str.as_str())
@@ -248,7 +253,7 @@ impl_for! {
 impl_for! {
     <Config> TryFrom<String>:
 
-    type Error = error::Error;
+    type Error = crate::Error;
 
     fn try_from(str: String) -> Result<Self> {
         Self::from_str(str.as_str())
@@ -258,7 +263,7 @@ impl_for! {
 impl_for! {
     <Config> TryFrom<&str>:
 
-    type Error = error::Error;
+    type Error = crate::Error;
 
     fn try_from(str: &str) -> Result<Self> {
         Self::from_str(str)
@@ -337,7 +342,7 @@ mod tests {
         assert!(Stringlet::<256>::fits(256).is_ok());
 
         assert!(VarStringlet::<0>::fits(0).is_ok());
-        assert!(!VarStringlet::<0>::fits(1).is_ok());
+        assert!(VarStringlet::<0>::fits(1).is_err());
         assert!(VarStringlet::<1>::fits(1).is_ok());
         assert!(VarStringlet::<1>::fits(0).is_ok());
         assert!(VarStringlet::<2>::fits(0).is_ok());
@@ -345,15 +350,15 @@ mod tests {
         assert!(VarStringlet::<255>::fits(255).is_ok());
 
         assert!(TrimStringlet::<0>::fits(0).is_ok());
-        assert!(!TrimStringlet::<0>::fits(1).is_ok());
+        assert!(TrimStringlet::<0>::fits(1).is_err());
         assert!(TrimStringlet::<1>::fits(0).is_ok());
         assert!(TrimStringlet::<1>::fits(1).is_ok());
-        assert!(!TrimStringlet::<2>::fits(0).is_ok());
+        assert!(TrimStringlet::<2>::fits(0).is_err());
         assert!(TrimStringlet::<256>::fits(255).is_ok());
         assert!(TrimStringlet::<256>::fits(256).is_ok());
 
         assert!(SlimStringlet::<0>::fits(0).is_ok());
-        assert!(!SlimStringlet::<0>::fits(1).is_ok());
+        assert!(SlimStringlet::<0>::fits(1).is_err());
         assert!(SlimStringlet::<1>::fits(1).is_ok());
         assert!(SlimStringlet::<1>::fits(0).is_ok());
         assert!(SlimStringlet::<2>::fits(0).is_ok());

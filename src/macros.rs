@@ -103,6 +103,13 @@ const S3: [VarStringlet<15>; 2] = stringlet!(v 15: [concat!("abcdefgh", 'i', "jk
 assert_eq!(s1, s2);
 assert_eq!(s2, S3);
 ```
+
+You can also provide several comma separated parameter-sets to get a tuple of stringlets:
+```
+# use crate::stringlet::{Stringlet, stringlet};
+let tuple = stringlet!(("abc"), (3: " abc ".trim_ascii()));
+assert_eq!(tuple.0, tuple.1);
+```
 */
 #[macro_export]
 macro_rules! stringlet {
@@ -129,6 +136,10 @@ macro_rules! stringlet {
     };
     (s  $($rest:tt)+) => {
         $crate::stringlet!(slim  $($rest)+)
+    };
+
+    ($(($($slet:tt)+)),* $(,)?) => {
+        ($($crate::stringlet!($($slet)+)),*)
     };
 
     ($size:tt:  $($rest:tt)+) => {
@@ -225,7 +236,7 @@ mod doctests {
 
 #[cfg(test)]
 mod tests {
-    fn cmp<Slet: std::fmt::Debug>(slet: Slet, str: &str) {
+    fn cmp<Slet: core::fmt::Debug>(slet: Slet, str: &str) {
         assert_eq!(format!("{:?}", slet), str);
     }
     #[test]
@@ -278,6 +289,11 @@ mod tests {
         cmp(
             stringlet!(slim 5: ["aha", "oh"]),
             "[SlimStringlet<5> { str: \"aha\" }, SlimStringlet<5> { str: \"oh\" }]",
+        );
+
+        cmp(
+            stringlet!(("aha"), (trim 4: "aha"), (slim 5: ["aha", "oh"])),
+            "(Stringlet<3> { str: \"aha\" }, TrimStringlet<4> { str: \"aha\" }, [SlimStringlet<5> { str: \"aha\" }, SlimStringlet<5> { str: \"oh\" }])",
         );
     }
 }

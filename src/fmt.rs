@@ -56,7 +56,7 @@ impl_for! {
     }
 }
 
-impl Display for error::Error {
+impl Display for Error {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> Result {
         match self {
             TooLong => write!(fmt, "too long"),

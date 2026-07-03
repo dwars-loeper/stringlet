@@ -54,13 +54,14 @@ fn try_from() {
     assert_eq!(s.as_ref(), "hello");
 }
 
+/// This takes a tuple of stringlets and converts them to various types. The middle ones shall succeed, the others don’t fit.
 macro_rules! from_stringlet {
     ($slet:ident ($($short:ty),+) ($($ok:ty),+) ($($long:ty),*)) => {
         $(assert_eq!(<$short>::from_stringlet($slet).unwrap_err(), TooShort, "TooShort {} {:?}", stringify!($short), $slet);)+
         $(assert_eq!(<$ok>::from_stringlet($slet).unwrap(), $slet, "Ok {} {:?}", stringify!($ok), $slet);)+
         $(assert_eq!(<$long>::from_stringlet($slet).unwrap_err(), TooLong, "TooLong {} {:?}", stringify!($long), $slet);)*
     };
-    ([$($slet:tt,)+] $short:tt $ok:tt $long:tt) => {
+    (($($slet:tt,)+) $short:tt $ok:tt $long:tt) => {
         $(
             let slet = stringlet!$slet;
             from_stringlet!(slet $short $ok $long);
@@ -70,9 +71,9 @@ macro_rules! from_stringlet {
 
 #[test]
 fn from_stringlet() {
-    use stringlet::error::Error::{TooLong, TooShort};
+    use stringlet::Error::{TooLong, TooShort};
     from_stringlet! {
-        [
+        (
             (""),
             (v: ""),
             (v 1: ""),
@@ -82,16 +83,17 @@ fn from_stringlet() {
             (s: ""),
             (s 1: ""),
             (s 2: ""),
-        ]
+        )
         (Stringlet<1>, TrimStringlet<2>)
-        (Stringlet<0>, VarStringlet<0>, VarStringlet<255>, TrimStringlet<0>, TrimStringlet<1>, SlimStringlet<0>, SlimStringlet<64>)
+        (Stringlet<0>, VarStringlet<0>, VarStringlet<255>, TrimStringlet<0>, TrimStringlet<1>, SlimStringlet<0>, SlimStringlet<1>, SlimStringlet<64>)
         ()
     }
     from_stringlet! {
-        [
+        (
             ("x"),
             (v: "x"),
             (v 1: "\0"),
+            (v 1: "x"),
             (v 2: "x"),
             (v 3: "x"),
             (t: "x"),
@@ -110,23 +112,23 @@ fn from_stringlet() {
             (s: "y"),
             (s 2: "y"),
             (s 3: "y"),
-        ]
+        )
         (Stringlet<2>, TrimStringlet<3>)
-        (Stringlet<1>, VarStringlet<1>, VarStringlet<255>, TrimStringlet<1>, TrimStringlet<2>, SlimStringlet<1>, SlimStringlet<64>)
+        (Stringlet<1>, VarStringlet<1>, VarStringlet<255>, TrimStringlet<1>, TrimStringlet<2>, SlimStringlet<1>, SlimStringlet<2>, SlimStringlet<64>)
         (Stringlet<0>, VarStringlet<0>, TrimStringlet<0>, SlimStringlet<0>)
     }
     from_stringlet! {
-        [
+        (
             (65: &"x".repeat(65)),
-        ]
+        )
         (Stringlet<66>, TrimStringlet<67>)
         (Stringlet<65>, VarStringlet<65>, TrimStringlet<65>)
         (Stringlet<64>, VarStringlet<64>, TrimStringlet<64>, SlimStringlet<64>)
     }
     from_stringlet! {
-        [
+        (
             (256: &"x".repeat(256)),
-        ]
+        )
         (Stringlet<257>, TrimStringlet<258>)
         (Stringlet<256>, TrimStringlet<256>)
         (Stringlet<255>, VarStringlet<255>, TrimStringlet<255>)
