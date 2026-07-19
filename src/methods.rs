@@ -2,10 +2,10 @@
 
 use crate::*;
 
-impl<Kind: crate::Kind, const SIZE: usize> StringletBase<Kind, SIZE> {
+impl<Kind: crate::Kind, const SIZE: usize> Stringlet<Kind, SIZE> {
     #[inline(always)]
     pub const fn as_bytes(&self) -> &[u8] {
-        if Kind::FIXED {
+        if Kind::FIX {
             &self.str
         } else {
             // const equivalent of [..self.len()], asm differs in debug but same as slice in release
@@ -36,7 +36,7 @@ impl<Kind: crate::Kind, const SIZE: usize> StringletBase<Kind, SIZE> {
     #[inline(always)]
     pub const fn len(&self) -> usize {
         // optimizer should elide all but one if-branch as all conditions are const
-        if Kind::FIXED || SIZE == 0 {
+        if Kind::FIX || SIZE == 0 {
             return SIZE;
         }
 
@@ -66,8 +66,8 @@ impl<Kind: crate::Kind, const SIZE: usize> StringletBase<Kind, SIZE> {
         if SIZE == 0 {
             // trivially
             true
-        } else if Kind::FIXED {
-            // FIXED > 0 can never be empty
+        } else if Kind::FIX {
+            // FIX > 0 can never be empty
             false
         } else if Kind::VAR {
             self.last() == 0

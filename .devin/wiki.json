@@ -44,8 +44,8 @@
       ]
     },
     {
-      "title": "Stringlet (Fixed-Size)",
-      "purpose": "Deep dive into Stringlet<SIZE>: fixed-length strings, compiled bounds, fastest variant, use cases and examples.",
+      "title": "FixStringlet (Fix-Size)",
+      "purpose": "Deep dive into FixStringlet<SIZE>: fixed-length strings, compiled bounds, fastest variant, use cases and examples.",
       "parent": "String Type Variants",
       "page_notes": [
         {
@@ -222,7 +222,7 @@
     },
     {
       "title": "Internal Architecture",
-      "purpose": "Deep dive into the implementation: StringletBase, Kind system, and core design patterns.",
+      "purpose": "Deep dive into the implementation: Stringlet, Kind system, and core design patterns.",
       "page_notes": [
         {
           "content": ""
@@ -230,8 +230,8 @@
       ]
     },
     {
-      "title": "StringletBase and Kind System",
-      "purpose": "Explain the generic StringletBase<Kind, SIZE, LEN> structure, Kind marker types, and PhantomData usage.",
+      "title": "Stringlet and Kind System",
+      "purpose": "Explain the generic Stringlet<Kind, SIZE, LEN> structure, Kind marker types, and PhantomData usage.",
       "parent": "Internal Architecture",
       "page_notes": [
         {

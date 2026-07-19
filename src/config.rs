@@ -1,10 +1,10 @@
 //! Configuration for stringlet
 
-use super::StringletBase;
+use super::Stringlet;
 
 pub trait Kind {
     type ExtraLen: Copy + Clone;
-    const FIXED: bool = false;
+    const FIX: bool = false;
     const VAR: bool = false;
     const TRIM: bool = false;
     const SLIM: bool = false;
@@ -12,7 +12,7 @@ pub trait Kind {
     const ABBR: u8;
 }
 
-/// Configure constructors of `StringletBase` to have only valid generic parameters.
+/// Configure constructors of `Stringlet` to have only valid generic parameters.
 #[diagnostic::on_unimplemented(
     message = "`VarStringlet<{SIZE}>` or `SlimStringlet<{SIZE}>` has excessive SIZE",
     label = "SIZE must be `0..=255` or `0..=64`",
@@ -22,7 +22,7 @@ pub trait Kind {
 #[doc(hidden)]
 pub trait Config<Kind, const SIZE: usize = 16> {}
 
-impl<const SIZE: usize> Config<Fixed, SIZE> for Stringlet<SIZE> {}
+impl<const SIZE: usize> Config<Fix, SIZE> for FixStringlet<SIZE> {}
 
 #[diagnostic::on_unimplemented(
     message = "`VarStringlet<{SIZE}>` has excessive SIZE",
@@ -85,18 +85,18 @@ macro_rules! config {
             const ABBR: u8 = stringify!($kind).as_bytes()[0]; // TODO NAME[0]
         }
 
-        #[doc = concat!($msg1, " length kind of stringlet", $msg2)]
+        #[doc = concat!($msg1, " length kind of `Stringlet`", $msg2)]
         $(#[doc = concat!("\n\nWhen instatiating this with a generic `SIZE`, you need to add this bound:\n```ignore\nwhere ",
             stringify!($stringlet), "<SIZE>: ", stringify!($kind_config), "<SIZE>\n```")])?
-        pub type $stringlet<const SIZE: usize = 16> = StringletBase<$kind, SIZE>;
+        pub type $stringlet<const SIZE: usize = 16> = Stringlet<$kind, SIZE>;
         $(config![@ $stringlet $kind_config $size];)?
     };
 }
 
-config!("Fixed" ", i.e. bounds for array access are compiled in, hence it is fast.
+config!("Fix" ", i.e. bounds for array access are compiled in, hence it is fast.
 
 This is also produced by [`stringlet!(…)`](stringlet!()) without a kind specifier."
-    Stringlet Fixed FIXED ());
+    FixStringlet Fix FIX ());
 config!("Variable" ", with one extra byte for the length.
     Speed differs for some content processing, where SIMD gives an advantage for multiples of some power of 2, e.g.
     `VarStringlet<32>`. While for copying the advantage can be at one less, e.g. `VarStringlet<31>`. Size must be `0..=255`.

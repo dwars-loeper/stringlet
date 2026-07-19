@@ -88,6 +88,7 @@ cmp_all!(gt: >);
 cmp_all!(ge: >=);
 
 #[test]
+#[allow(clippy::op_ref)]
 fn cmp_wrappers() {
     let slet = stringlet!("wow");
     let string = String::from("wow");

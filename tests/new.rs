@@ -4,7 +4,7 @@ use stringlet::prelude::*;
 
 #[test]
 fn new() {
-    let s = Stringlet::<0>::new();
+    let s = FixStringlet::<0>::new();
     assert!(s.is_empty());
     let s = TrimStringlet::<0>::new();
     assert!(s.is_empty());
@@ -18,7 +18,7 @@ fn new() {
 
 #[test]
 fn default() {
-    let s: Stringlet<0> = Default::default();
+    let s: FixStringlet<0> = Default::default();
     assert!(s.is_empty());
     let s: TrimStringlet<0> = Default::default();
     assert!(s.is_empty());
@@ -84,8 +84,8 @@ fn from_stringlet() {
             (s 1: ""),
             (s 2: ""),
         )
-        (Stringlet<1>, TrimStringlet<2>)
-        (Stringlet<0>, VarStringlet<0>, VarStringlet<255>, TrimStringlet<0>, TrimStringlet<1>, SlimStringlet<0>, SlimStringlet<1>, SlimStringlet<64>)
+        (FixStringlet<1>, TrimStringlet<2>)
+        (FixStringlet<0>, VarStringlet<0>, VarStringlet<255>, TrimStringlet<0>, TrimStringlet<1>, SlimStringlet<0>, SlimStringlet<1>, SlimStringlet<64>)
         ()
     }
     from_stringlet! {
@@ -113,24 +113,24 @@ fn from_stringlet() {
             (s 2: "y"),
             (s 3: "y"),
         )
-        (Stringlet<2>, TrimStringlet<3>)
-        (Stringlet<1>, VarStringlet<1>, VarStringlet<255>, TrimStringlet<1>, TrimStringlet<2>, SlimStringlet<1>, SlimStringlet<2>, SlimStringlet<64>)
-        (Stringlet<0>, VarStringlet<0>, TrimStringlet<0>, SlimStringlet<0>)
+        (FixStringlet<2>, TrimStringlet<3>)
+        (FixStringlet<1>, VarStringlet<1>, VarStringlet<255>, TrimStringlet<1>, TrimStringlet<2>, SlimStringlet<1>, SlimStringlet<2>, SlimStringlet<64>)
+        (FixStringlet<0>, VarStringlet<0>, TrimStringlet<0>, SlimStringlet<0>)
     }
     from_stringlet! {
         (
             (65: &"x".repeat(65)),
         )
-        (Stringlet<66>, TrimStringlet<67>)
-        (Stringlet<65>, VarStringlet<65>, TrimStringlet<65>)
-        (Stringlet<64>, VarStringlet<64>, TrimStringlet<64>, SlimStringlet<64>)
+        (FixStringlet<66>, TrimStringlet<67>)
+        (FixStringlet<65>, VarStringlet<65>, TrimStringlet<65>)
+        (FixStringlet<64>, VarStringlet<64>, TrimStringlet<64>, SlimStringlet<64>)
     }
     from_stringlet! {
         (
             (256: &"x".repeat(256)),
         )
-        (Stringlet<257>, TrimStringlet<258>)
-        (Stringlet<256>, TrimStringlet<256>)
-        (Stringlet<255>, VarStringlet<255>, TrimStringlet<255>)
+        (FixStringlet<257>, TrimStringlet<258>)
+        (FixStringlet<256>, TrimStringlet<256>)
+        (FixStringlet<255>, VarStringlet<255>, TrimStringlet<255>)
     }
 }
