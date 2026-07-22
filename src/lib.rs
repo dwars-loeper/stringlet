@@ -19,11 +19,11 @@ mod traits;
 mod workaround;
 
 pub mod prelude {
-    pub use crate::{SlimStringlet, Stringlet, TrimStringlet, VarStringlet, stringlet};
+    pub use crate::{FixStringlet, SlimStringlet, TrimStringlet, VarStringlet, stringlet};
 }
 
 pub use config::{
-    Config, Fixed, Kind, Slim, SlimConfig, SlimStringlet, Stringlet, Trim, TrimStringlet, Var,
+    Config, Fix, FixStringlet, Kind, Slim, SlimConfig, SlimStringlet, Trim, TrimStringlet, Var,
     VarConfig, VarStringlet,
 };
 
@@ -45,8 +45,8 @@ pub(crate) const TAG: u8 = 0b11_000000;
 /** An inline String of varying size bounds, which can be handled like a primitive type.
 This is the underlying type, which you would not use directly. Instead use one of:
 
-- **[`Stringlet`], [`stringlet!(…)`](stringlet!())**: This is fixed size, i.e. bounds for array access are compiled in,
-  hence fast.
+- **[`FixStringlet`], [`stringlet!(…)`](stringlet!())**: This fixes length to size, i.e. bounds for array access are
+  compiled in, hence fast.
 
 - **[`VarStringlet`], `stringlet!(var …)`, `stringlet!(v …)`**: This adds one byte for the length – still pretty fast.
   Speed differs for some content processing, where SIMD gives an advantage for multiples of some power of 2, e.g.
@@ -80,7 +80,7 @@ _ = create::<5>();
 // Adapted from CAD97 https://internals.rust-lang.org/t/what-s-where-size-kind-extra/23987/9
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct StringletBase<Kind: crate::Kind, const SIZE: usize> {
+pub struct Stringlet<Kind: crate::Kind, const SIZE: usize> {
     /// The actual payload – if it is shorter than SIZE, its last bytes will be tagged.
     pub(crate) str: [u8; SIZE],
     pub(crate) extra_len: Kind::ExtraLen,
@@ -107,7 +107,7 @@ macro_rules! impl_for {
 
     (@ ($($lt:lifetime)?) {$($config:ident)?} [$($gen:tt)*] $trait:ty: $($rest:tt)*) => {
         impl<$($lt,)? Kind: crate::Kind, const SIZE: usize, $($gen)*> $trait
-        for StringletBase<Kind, SIZE>
+        for Stringlet<Kind, SIZE>
         $(where Self: $config<Kind, SIZE>)?
         {
             $($rest)*
@@ -124,10 +124,10 @@ macro_rules! impl_for {
     };
 }
 
-/// A 2<sup>nd</sup> generic `StringletBase`.
+/// A 2<sup>nd</sup> generic `Stringlet`.
 macro_rules! self2 {
     () => {
-        StringletBase<Kind2, SIZE2>
+        Stringlet<Kind2, SIZE2>
     };
 }
 

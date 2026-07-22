@@ -4,10 +4,10 @@ use crate::*;
 
 use core::cmp::Ordering;
 
-/// A 2<sup>nd</sup> generic `StringletBase`.
+/// A 2<sup>nd</sup> generic `Stringlet`.
 macro_rules! self2 {
     () => {
-        StringletBase<Kind2, SIZE2>
+        Stringlet<Kind2, SIZE2>
     };
 }
 
@@ -37,15 +37,15 @@ impl_for! {
                 // Compare raw bytes, including the padding and len byte.
                 self.as_slice() == other.as_slice()
             } else {
-                // TRIM’s and SLIM’s padding make this valid, also comparing with FIXED.
+                // TRIM’s and SLIM’s padding make this valid, also comparing with FIX.
                 self.str == other.str[..]
             }
-        } else if Kind::FIXED {
-            // Size differs, so both fixed can’t be same. Can only be same if SIZE falls within other’s range.
-            !Kind2::FIXED &&
+        } else if Kind::FIX {
+            // Size differs, so both FIX can’t be same. Can only be same if SIZE falls within other’s range.
+            !Kind2::FIX &&
                 low!(Kind2, SIZE2) <= SIZE && SIZE <= SIZE2 &&
                 self.str == other.as_bytes()
-        } else if Kind2::FIXED {
+        } else if Kind2::FIX {
             // Can only be same if other’s SIZE falls within self’s range.
             low!(Kind, SIZE) <= SIZE2 && SIZE2 <= SIZE &&
                 other.str == self.as_bytes()
@@ -73,7 +73,7 @@ impl_for! {
     fn eq(&self, other: &str) -> bool {
         if SIZE == 0 {
             other.is_empty()
-        } else if Kind::FIXED {
+        } else if Kind::FIX {
             self.str == other.as_bytes()
         } else {
             self.as_bytes() == other.as_bytes()
@@ -119,10 +119,10 @@ impl_for! {
             if other.is_empty() { Ordering::Equal } else { Ordering::Less }
         } else if SIZE2 == 0 {
             if self.is_empty() { Ordering::Equal } else { Ordering::Greater }
-        } else if Kind::FIXED {
+        } else if Kind::FIX {
             self.str[..]
-                .cmp(if Kind2::FIXED { &other.str[..] } else { other.as_bytes() })
-        } else if Kind2::FIXED {
+                .cmp(if Kind2::FIX { &other.str[..] } else { other.as_bytes() })
+        } else if Kind2::FIX {
             self.as_bytes().cmp(&other.str[..])
         } else {
             self.as_bytes().cmp(other.as_bytes())
@@ -146,7 +146,7 @@ impl_for! {
         if SIZE == 0 {
             Some(if other.is_empty() { Ordering::Equal } else { Ordering::Less })
         } else {
-            if Kind::FIXED { &self.str[..] } else { self.as_bytes() }
+            if Kind::FIX { &self.str[..] } else { self.as_bytes() }
                 .partial_cmp(other.as_bytes())
         }
     }

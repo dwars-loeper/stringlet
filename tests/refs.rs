@@ -4,7 +4,7 @@ use stringlet::prelude::*;
 
 #[test]
 fn deref() {
-    let s = Stringlet::<3>::try_from("Abc").unwrap();
+    let s = FixStringlet::<3>::try_from("Abc").unwrap();
     assert!(s.contains('b'));
     let s = VarStringlet::<4>::try_from("Abc").unwrap();
     assert!(s.contains('b'));
@@ -16,7 +16,7 @@ fn deref() {
 
 #[test]
 fn as_ref() {
-    let s = Stringlet::<1>::try_from("A").unwrap();
+    let s = FixStringlet::<1>::try_from("A").unwrap();
     let s: &str = s.as_ref();
     assert_eq!(s, "A");
 }
@@ -27,7 +27,7 @@ fn borrow() {
         ($a:ident = $in:expr, $size:literal) => {
             let $a = $in;
             let str: &str = $a.as_ref();
-            let slet: &Stringlet<$size> = $a.as_ref();
+            let slet: &FixStringlet<$size> = $a.as_ref();
             assert_eq!(str.as_ptr(), slet.as_ptr(), "fail {}", stringify!($in));
         };
         ($a:expr) => {
@@ -45,5 +45,5 @@ fn borrow() {
 #[test]
 #[should_panic]
 fn panics_when_ref_too_long() {
-    let _: &Stringlet<4> = "abc".as_ref();
+    let _: &FixStringlet<4> = "abc".as_ref();
 }

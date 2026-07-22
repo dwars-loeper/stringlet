@@ -7,21 +7,15 @@ support, etc. The intention is to be no-std and no-alloc – which still require
 <div class="warning">
 This is an <b>alpha release</b>, but well tested by <code>mutants</code> and <code>miri</code>. Using it as an inline
 <code>str</code> works. The design is prepared for mutating functionality like <code>String</code>, but that needs to be
-implemented.<br/><br/>
-
-As it came first, the fixed kind is simply called <code>Stringlet</code>, whereas all other kinds have it in their
-name, e.g. <code>VarStringlet</code>. This asymetry can be confusing, both when reading code and when talking about
-various kinds. Therefore I’m considering renaming it to <code>FixedStringlet</code>. This would free the old name to
-become an enum unifying all kinds into one type. That would make it easy to mix and pass around all kinds. Happy to hear
-your better name suggestions!
+implemented.
 </div>
 
 In my casual benchmarking it beats all other string kinds and crates nicely, or even spectacularly on some tests. There
 are four kinds sharing mostly the same code. They differ in length handling, which gives different trade-offs in only
 some operations, like `len()`, `as_ref()`, and `as_str()`:
 
-- **[`Stringlet`](https://docs.rs/stringlet/latest/stringlet/type.Stringlet.html),
-  [`stringlet!(…)`](https://docs.rs/stringlet/latest/stringlet/macro.stringlet.html)**: This is fixed size, i.e. bounds
+- **[`FixStringlet`](https://docs.rs/stringlet/latest/stringlet/type.FixStringlet.html),
+  [`stringlet!(…)`](https://docs.rs/stringlet/latest/stringlet/macro.stringlet.html)**: This fixes length to size, i.e. bounds
   for array access are compiled in, hence fast.
 
 - **[`VarStringlet`](https://docs.rs/stringlet/latest/stringlet/type.VarStringlet.html), `stringlet!(var …)`,
@@ -43,7 +37,7 @@ some operations, like `len()`, `as_ref()`, and `as_str()`:
 N.B.: Variable size `VarStringlet` seems a competitor to [`fixedstr::str`](https://crates.io/crates/fixedstr),
 [`arrayvec::ArrayString`](https://crates.io/crates/arrayvec), and the semi-official
 [`heapless::String`](https://docs.rs/heapless/latest/heapless/string/type.String.html). They lack a `heapless::Str`, to
-match the faster fixed size `Stringlet`. That would be given by
+match the faster `FixStringlet`. That would be given by
 [`fixedstr::zstr`](https://docs.rs/fixedstr/latest/fixedstr/struct.zstr.html) but their equality checks are not
 optimized. I hope it can be independently confirmed (or debunked, if I mismeasured) that for tasks like `== Self` or `==
 &str` all variants in this crate seem by a factor faster than competitors.
@@ -65,18 +59,18 @@ let a: VarStringlet<10> = "shorter".try_into()?; // override default stringlet s
 let b = a;
 println!("{a} == {b}? {}", a == b);      // No “value borrowed here after move” error 😇
 
-let nothing = Stringlet::<0>::new();     // Empty and zero size
-let nil = VarStringlet::<5>::new();      // Empty and size 5 – would be impossible for fixed size Stringlet
+let nothing = FixStringlet::<0>::new();  // Empty and zero size
+let nil = VarStringlet::<5>::new();      // Empty and size 5 – would be impossible for FixStringlet
 let nada = TrimStringlet::<1>::new();    // Empty and size 1 – biggest an empty TrimStringlet can be
 
-let x = stringlet!("Hello Rust!");       // Stringlet<11> (len of parameter)
+let x = stringlet!("Hello Rust!");       // FixStringlet<11> (len of parameter)
 let y = stringlet!(v 14: "Hello Rust!"); // abbreviated VarStringlet<14>, more than length
 let z = stringlet!(slim: "Hello Rust!"); // SlimStringlet<11> (len of parameter)
 let Ψ = stringlet!(v: ["abcd", "abc", "ab"]); // VarStringlet<4> (len of 1st parameter) for each
-let ω = stringlet!(["abc", "def", "ghj"]); // Stringlet<3> (len of 1st parameter) for each
+let ω = stringlet!(["abc", "def", "ghj"]); // FixStringlet<3> (len of 1st parameter) for each
 
-const HELLO: Stringlet<11> = stringlet!("Hello Rust!"); // Input length must match type
-const PET: [Stringlet<3>; 4] = stringlet!(["cat", "dog", "ham", "pig"]); // size of 1st element
+const HELLO: FixStringlet<11> = stringlet!("Hello Rust!"); // Input length must match type
+const PET: [FixStringlet<3>; 4] = stringlet!(["cat", "dog", "ham", "pig"]); // size of 1st element
 const PETS: [VarStringlet<8>; 4] = stringlet!(_: ["cat", "dog", "hamster", "piglet"]); // _: derive type
 # stringlet::Result::Ok(())
 ```
@@ -91,8 +85,8 @@ error[E0599]: `SlimStringlet<99>` has excessive SIZE
    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ SIZE must be `0..=64`
    …
    = note: the following trait bounds were not satisfied:
-           `stringlet::StringletBase<stringlet::Slim, 99>: stringlet::SlimConfig<99>`
-           which is required by `stringlet::StringletBase<stringlet::Slim, 99>: Config<stringlet::Slim, 99>`
+           `stringlet::Stringlet<stringlet::Slim, 99>: stringlet::SlimConfig<99>`
+           which is required by `stringlet::Stringlet<stringlet::Slim, 99>: Config<stringlet::Slim, 99>`
    = note: `SlimStringlet` cannot be longer than 64 bytes. Consider using `VarStringlet`!
 ```
 
@@ -133,8 +127,8 @@ There are two aspects to this, checking for well-formed UTF-8, and that the stri
 While the Rust compiler knows both things about a `"literal str"`, alas it chooses to not tell the type-system the size.
 Whereas, if you give a `b"byte slice"` instead, the size is available, but UTF-8 is not checked. You can’t get both.
 Therefore normal Rust code can’t validate both at compile time. You can choose either constructor
-[`from_str`](https://docs.rs/stringlet/latest/stringlet/struct.StringletBase.html#method.from_str) or
-[`from_utf8_slice`](https://docs.rs/stringlet/0.8.0/stringlet/struct.StringletBase.html#method.from_utf8_slice).  Each
+[`from_str`](https://docs.rs/stringlet/latest/stringlet/struct.Stringlet.html#method.from_str) or
+[`from_utf8_slice`](https://docs.rs/stringlet/latest/stringlet/struct.Stringlet.html#method.from_utf8_slice).  Each
 will check the other property only once it runs.
 
 *Dreaming:* Even if the compiler were to mark this literal with a size hint like `&str<11>`, that would still not be
@@ -177,7 +171,7 @@ is taken from the first parameter. For that it must be const, even if it is not 
 
 - [ ] Implement for popular 3rd party crates.
 
-- [ ] Why does this not pick up the default SIZE of 16: `let fail = Stringlet::new();`
+- [ ] Why does this not pick up the default SIZE of 16: `let fail = FixStringlet::new();`
 
 - [ ] Is there a downside to `Copy` by default?
 

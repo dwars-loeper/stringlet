@@ -73,11 +73,11 @@ mod tests {
     #[test]
     fn error_display() {
         assert_eq!(
-            Stringlet::<1>::from_str("").unwrap_err().to_string(),
+            FixStringlet::<1>::from_str("").unwrap_err().to_string(),
             "too short"
         );
         assert_eq!(
-            Stringlet::<0>::from_str("a").unwrap_err().to_string(),
+            FixStringlet::<0>::from_str("a").unwrap_err().to_string(),
             "too long"
         );
     }

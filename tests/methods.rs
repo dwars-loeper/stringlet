@@ -4,14 +4,14 @@ use stringlet::prelude::*;
 
 #[test]
 fn big() {
-    let _f: Stringlet<1024>;
+    let _f: FixStringlet<1024>;
     let _v: VarStringlet<255>;
     let _s: SlimStringlet<64>;
 }
 
 #[test]
 fn as_str() -> stringlet::Result<()> {
-    let f: Stringlet<7> = "A123456".try_into()?;
+    let f: FixStringlet<7> = "A123456".try_into()?;
     assert_eq!(f.as_str(), "A123456");
     let v: VarStringlet = "A123456".try_into()?;
     assert_eq!(v.as_str(), "A123456");
@@ -30,9 +30,9 @@ where
         str::from_utf8(&[0; 64]).unwrap(),
         str::from_utf8(&[0x7f_u8; 64]).unwrap(),
     ];
-    let fixed: Stringlet<SIZE> = (&str64s[0][..SIZE]).try_into().unwrap();
-    assert_eq!(fixed.is_empty(), SIZE == 0);
-    assert_eq!(fixed.len(), SIZE);
+    let fix: FixStringlet<SIZE> = (&str64s[0][..SIZE]).try_into().unwrap();
+    assert_eq!(fix.is_empty(), SIZE == 0);
+    assert_eq!(fix.len(), SIZE);
     for len in 0..=SIZE {
         let str: VarStringlet<SIZE> = (&str64s[0][..len]).try_into().unwrap();
         assert_eq!(str.is_empty(), len == 0);

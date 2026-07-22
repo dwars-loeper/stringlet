@@ -37,10 +37,10 @@ macro_rules! stringlet_base {
     };
 
     (dyn _ _ $str:expr) => {
-        $crate::StringletBase::<_, _>::_from_macro($str)
+        $crate::Stringlet::<_, _>::_from_macro($str)
     };
     (dyn $kind:tt $size:tt $str:expr) => {
-        $crate::StringletBase::<$crate::$kind, $size>::_from_macro($str)
+        $crate::Stringlet::<$crate::$kind, $size>::_from_macro($str)
     };
 
     (const $kind:tt $size:tt $str:expr) => {
@@ -71,26 +71,29 @@ length of the 1st `str` parameter, in which case that parameter must be `const`.
 You can also give the size explicitly, or have it inferred from context along
 with the kind.
 
+You can test whether this managed to make your `Stringlet` be `const` by assigning it to a `const`. Where this is not
+possible, because you are passing in dynamic data, beware that this will panic, if the SIZE is wrong!
+
 The optional configuration is kind and/or size, if present followed by a colon:
 
 |Long Spec \| |Short Spec \| |Type |
 |:---|:---|:---|
-| | |`Stringlet<param.len()>`|
-|SIZE: | |`Stringlet<SIZE>`|
+| | |`FixStringlet<param.len()>`|
+|SIZE: | |`FixStringlet<SIZE>`|
 |var: |v: |`VarStringlet<param.len()>`|
 |var SIZE: |v SIZE: |`VarStringlet<SIZE>`|
 |trim: |t: |`TrimStringlet<param.len()>`|
 |trim SIZE: |t SIZE: |`TrimStringlet<SIZE>`|
 |slim: |s: |`SlimStringlet<param.len()>`|
 |slim SIZE: |s SIZE: |`SlimStringlet<SIZE>`|
-|_: | |`StringletBase<_, _>`|
+|_: | |`Stringlet<_, _>`|
 
 These are equivalent:
 ```
-# use crate::stringlet::{Stringlet, stringlet};
+# use crate::stringlet::{FixStringlet, stringlet};
 let s1 = stringlet!("abc");
-let s2: Stringlet<3> = stringlet!(_: "abc");
-const S3: Stringlet<3> = stringlet!(3: " abc ".trim_ascii());
+let s2: FixStringlet<3> = stringlet!(_: "abc");
+const S3: FixStringlet<3> = stringlet!(3: " abc ".trim_ascii());
 assert_eq!(s1, s2);
 assert_eq!(s2, S3);
 ```
@@ -106,7 +109,7 @@ assert_eq!(s2, S3);
 
 You can also provide several comma separated parameter-sets to get a tuple of stringlets:
 ```
-# use crate::stringlet::{Stringlet, stringlet};
+# use crate::stringlet::{FixStringlet, stringlet};
 let tuple = stringlet!(("abc"), (3: " abc ".trim_ascii()));
 assert_eq!(tuple.0, tuple.1);
 ```
@@ -143,10 +146,10 @@ macro_rules! stringlet {
     };
 
     ($size:tt:  $($rest:tt)+) => {
-        $crate::stringlet_base!(size(Fixed $size)  $($rest)+)
+        $crate::stringlet_base!(size(Fix $size)  $($rest)+)
     };
     ($($rest:tt)+) => {
-        $crate::stringlet_base!(size(Fixed)  $($rest)+)
+        $crate::stringlet_base!(size(Fix)  $($rest)+)
     };
 }
 
@@ -156,7 +159,7 @@ mod doctests {
     ```compile_fail
     # use crate::stringlet::stringlet;
         println!("FAILED should not see this");
-        let _: Stringlet<2> = stringlet!(_: ""); // 0 is too short
+        let _: FixStringlet<2> = stringlet!(_: ""); // 0 is too short
     ```
     */
     fn macro_fixed_2_compile_fail() {}
@@ -165,7 +168,7 @@ mod doctests {
     ```compile_fail
     # use crate::stringlet::stringlet;
         println!("FAILED should not see this");
-        let _: [Stringlet<2>; 2] = stringlet!(_: ["ok", ""]); // 0 is too short
+        let _: [FixStringlet<2>; 2] = stringlet!(_: ["ok", ""]); // 0 is too short
     ```
     */
     fn macro_fixed_array_compile_fail() {}
@@ -241,12 +244,12 @@ mod tests {
     }
     #[test]
     fn all_types() {
-        cmp(stringlet!("aha"), "Stringlet<3> { str: \"aha\" }");
+        cmp(stringlet!("aha"), "FixStringlet<3> { str: \"aha\" }");
         cmp(stringlet!(var: "aha"), "VarStringlet<3> { str: \"aha\" }");
         cmp(stringlet!(trim: "aha"), "TrimStringlet<3> { str: \"aha\" }");
         cmp(stringlet!(slim: "aha"), "SlimStringlet<3> { str: \"aha\" }");
 
-        cmp(stringlet!(5: "aha45"), "Stringlet<5> { str: \"aha45\" }");
+        cmp(stringlet!(5: "aha45"), "FixStringlet<5> { str: \"aha45\" }");
         cmp(stringlet!(var 5: "aha"), "VarStringlet<5> { str: \"aha\" }");
         cmp(
             stringlet!(trim 4: "aha"),
@@ -259,7 +262,7 @@ mod tests {
 
         cmp(
             stringlet!(["aha", "oho"]),
-            "[Stringlet<3> { str: \"aha\" }, Stringlet<3> { str: \"oho\" }]",
+            "[FixStringlet<3> { str: \"aha\" }, FixStringlet<3> { str: \"oho\" }]",
         );
         cmp(
             stringlet!(var: ["aha", "oh"]),
@@ -276,7 +279,7 @@ mod tests {
 
         cmp(
             stringlet!(3: ["aha", "oho"]),
-            "[Stringlet<3> { str: \"aha\" }, Stringlet<3> { str: \"oho\" }]",
+            "[FixStringlet<3> { str: \"aha\" }, FixStringlet<3> { str: \"oho\" }]",
         );
         cmp(
             stringlet!(var 5: ["aha", "oh"]),
@@ -293,7 +296,7 @@ mod tests {
 
         cmp(
             stringlet!(("aha"), (trim 4: "aha"), (slim 5: ["aha", "oh"])),
-            "(Stringlet<3> { str: \"aha\" }, TrimStringlet<4> { str: \"aha\" }, [SlimStringlet<5> { str: \"aha\" }, SlimStringlet<5> { str: \"oh\" }])",
+            "(FixStringlet<3> { str: \"aha\" }, TrimStringlet<4> { str: \"aha\" }, [SlimStringlet<5> { str: \"aha\" }, SlimStringlet<5> { str: \"oh\" }])",
         );
     }
 }
