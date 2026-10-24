@@ -5,7 +5,7 @@ use crate::*;
 impl<Kind: crate::Kind, const SIZE: usize> Stringlet<Kind, SIZE> {
     #[inline(always)]
     pub const fn as_bytes(&self) -> &[u8] {
-        if Kind::FIX {
+        if Kind::UNI {
             &self.str
         } else {
             // const equivalent of [..self.len()], asm differs in debug but same as slice in release
@@ -36,7 +36,7 @@ impl<Kind: crate::Kind, const SIZE: usize> Stringlet<Kind, SIZE> {
     #[inline(always)]
     pub const fn len(&self) -> usize {
         // optimizer should elide all but one if-branch as all conditions are const
-        if Kind::FIX || SIZE == 0 {
+        if Kind::UNI || SIZE == 0 {
             return SIZE;
         }
 
@@ -47,11 +47,11 @@ impl<Kind: crate::Kind, const SIZE: usize> Stringlet<Kind, SIZE> {
         } else if SIZE == 1 {
             // iff single byte is not TAG | 1 we have 1 (use +, because mutants flags ^, which in this case is identical to |)
             (last != TAG + 1) as _
-        } else if Kind::TRIM {
+        } else if Kind::BI {
             // branchless: if last is tagged, subtract one
             SIZE - (last == TAG + 1) as usize
         }
-        // Next two SlimStringlet
+        // Next two PolyStringlet
         else if SIZE == 64 {
             // 64 is special as we only store 6 bits, where 0b00_0000 means SIZE-0b100_0000
             SIZE - (last == TAG) as usize * SIZE - (last > TAG) as usize * (last ^ TAG) as usize
@@ -66,16 +66,16 @@ impl<Kind: crate::Kind, const SIZE: usize> Stringlet<Kind, SIZE> {
         if SIZE == 0 {
             // trivially
             true
-        } else if Kind::FIX {
-            // FIX > 0 can never be empty
+        } else if Kind::UNI {
+            // UNI > 0 can never be empty
             false
         } else if Kind::VAR {
             self.last() == 0
-        } else if Kind::TRIM {
-            // TRIM is only empty if last is tagged
+        } else if Kind::BI {
+            // BI is only empty if last is tagged
             SIZE == 1 && self.last() == TAG + 1
         }
-        // Next two SlimStringlet
+        // Next two PolyStringlet
         else if SIZE == 64 {
             // Special case as we have 65 lengths but only 6 bits.
             self.last() == TAG

@@ -19,11 +19,11 @@ mod traits;
 mod workaround;
 
 pub mod prelude {
-    pub use crate::{FixStringlet, SlimStringlet, TrimStringlet, VarStringlet, stringlet};
+    pub use crate::{BiStringlet, PolyStringlet, UniStringlet, VarStringlet, stringlet};
 }
 
 pub use config::{
-    Config, Fix, FixStringlet, Kind, Slim, SlimConfig, SlimStringlet, Trim, TrimStringlet, Var,
+    Bi, BiStringlet, Config, Kind, Poly, PolyConfig, PolyStringlet, Uni, UniStringlet, Var,
     VarConfig, VarStringlet,
 };
 
@@ -45,32 +45,32 @@ pub(crate) const TAG: u8 = 0b11_000000;
 /** An inline String of varying size bounds, which can be handled like a primitive type.
 This is the underlying type, which you would not use directly. Instead use one of:
 
-- **[`FixStringlet`], [`stringlet!(…)`](stringlet!())**: This fixes length to size, i.e. bounds for array access are
+- **[`UniStringlet`], [`stringlet!(…)`](stringlet!())**: This fixes length to size, i.e. bounds for array access are
   compiled in, hence fast.
 
 - **[`VarStringlet`], `stringlet!(var …)`, `stringlet!(v …)`**: This adds one byte for the length – still pretty fast.
   Speed differs for some content processing, where SIMD gives an advantage for multiples of some power of 2, e.g.
   `VarStringlet<32>`. While for copying the advantage can be at one less, e.g. `VarStringlet<31>`. Size must be `0..=255`.
 
-- **[`TrimStringlet`], `stringlet!(trim …)`, `stringlet!(t …)`**: This can optionally trim one last byte, useful for codes
+- **[`BiStringlet`], `stringlet!(bi …)`, `stringlet!(b …)`**: This can optionally bi one last byte, useful for codes
   with minimal length variation like [ISO 639](https://www.iso.org/iso-639-language-code). This is achieved by tagging
   an unused last byte with a UTF-8 niche. The length gets calculated branchlessly with very few ops.
 
-- **[`SlimStringlet`], `stringlet!(slim …)`, `stringlet!(s …)`**: This uses the same UTF-8 niche, but fully: It projects
+- **[`PolyStringlet`], `stringlet!(poly …)`, `stringlet!(p …)`**: This uses the same UTF-8 niche, but fully: It projects
   the length into 6 bits of the last byte, when content is less than full size. Length must be `0..=64`. Though it is
   done branchlessly, there are a few more ops for length calculation. Hence this is the slowest, albeit by a small
   margin.
 
-If you want to create either of `VarStringlet` or `SlimStringlet` generically, you must specify their bounds:
+If you want to create either of `VarStringlet` or `PolyStringlet` generically, you must specify their bounds:
 ```
-use stringlet::{VarStringlet, VarConfig, SlimStringlet, SlimConfig, Result};
+use stringlet::{VarStringlet, VarConfig, PolyStringlet, PolyConfig, Result};
 fn create<const SIZE: usize>() -> Result<()>
 where
     VarStringlet<SIZE>: VarConfig<SIZE>,
-    SlimStringlet<SIZE>: SlimConfig<SIZE>,
+    PolyStringlet<SIZE>: PolyConfig<SIZE>,
 {
     let _var = VarStringlet::<SIZE>::try_from("var")?;
-    let _slim: SlimStringlet<SIZE> = "slim".try_into()?;
+    let _slim: PolyStringlet<SIZE> = "poly".try_into()?;
     Ok(())
 }
 _ = create::<5>();

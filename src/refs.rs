@@ -47,17 +47,17 @@ macro_rules! impl_ref {
     };
 }
 
-impl_ref!(str => FixStringlet);
+impl_ref!(str => UniStringlet);
 impl_ref!(str => VarStringlet: VarConfig);
-impl_ref!(str => TrimStringlet);
-impl_ref!(str => SlimStringlet: SlimConfig);
+impl_ref!(str => BiStringlet);
+impl_ref!(str => PolyStringlet: PolyConfig);
 
-impl_ref!(String => FixStringlet);
+impl_ref!(String => UniStringlet);
 impl_ref!(String => VarStringlet: VarConfig);
-impl_ref!(String => TrimStringlet);
-impl_ref!(String => SlimStringlet: SlimConfig);
+impl_ref!(String => BiStringlet);
+impl_ref!(String => PolyStringlet: PolyConfig);
 
-impl_ref!(Box<str> => FixStringlet);
+impl_ref!(Box<str> => UniStringlet);
 impl_ref!(Box<str> => VarStringlet: VarConfig);
-impl_ref!(Box<str> => TrimStringlet);
-impl_ref!(Box<str> => SlimStringlet: SlimConfig);
+impl_ref!(Box<str> => BiStringlet);
+impl_ref!(Box<str> => PolyStringlet: PolyConfig);

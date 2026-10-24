@@ -4,35 +4,35 @@ use stringlet::prelude::*;
 
 #[test]
 fn new() {
-    let s = FixStringlet::<0>::new();
+    let s = UniStringlet::<0>::new();
     assert!(s.is_empty());
-    let s = TrimStringlet::<0>::new();
+    let s = BiStringlet::<0>::new();
     assert!(s.is_empty());
-    let s = TrimStringlet::<1>::new();
+    let s = BiStringlet::<1>::new();
     assert!(s.is_empty());
     let s = VarStringlet::<8>::new();
     assert!(s.is_empty());
-    let s = SlimStringlet::<8>::new();
+    let s = PolyStringlet::<8>::new();
     assert!(s.is_empty());
 }
 
 #[test]
 fn default() {
-    let s: FixStringlet<0> = Default::default();
+    let s: UniStringlet<0> = Default::default();
     assert!(s.is_empty());
-    let s: TrimStringlet<0> = Default::default();
+    let s: BiStringlet<0> = Default::default();
     assert!(s.is_empty());
-    let s: TrimStringlet<1> = Default::default();
+    let s: BiStringlet<1> = Default::default();
     assert!(s.is_empty());
     let s: VarStringlet = Default::default();
     assert!(s.is_empty());
-    let s: SlimStringlet = Default::default();
+    let s: PolyStringlet = Default::default();
     assert!(s.is_empty());
 }
 
 #[test]
 fn from_string() {
-    let s: SlimStringlet<4> = String::from("hey").try_into().unwrap();
+    let s: PolyStringlet<4> = String::from("hey").try_into().unwrap();
     assert_eq!(s.as_ref(), "hey");
 }
 
@@ -50,7 +50,7 @@ fn panics_when_too_long() {
 
 #[test]
 fn try_from() {
-    let s = SlimStringlet::<8>::try_from("hello").unwrap();
+    let s = PolyStringlet::<8>::try_from("hello").unwrap();
     assert_eq!(s.as_ref(), "hello");
 }
 
@@ -78,14 +78,14 @@ fn from_stringlet() {
             (v: ""),
             (v 1: ""),
             (v 2: ""),
-            (t: ""),
-            (t 1: ""),
-            (s: ""),
-            (s 1: ""),
-            (s 2: ""),
+            (b: ""),
+            (b 1: ""),
+            (p: ""),
+            (p 1: ""),
+            (p 2: ""),
         )
-        (FixStringlet<1>, TrimStringlet<2>)
-        (FixStringlet<0>, VarStringlet<0>, VarStringlet<255>, TrimStringlet<0>, TrimStringlet<1>, SlimStringlet<0>, SlimStringlet<1>, SlimStringlet<64>)
+        (UniStringlet<1>, BiStringlet<2>)
+        (UniStringlet<0>, VarStringlet<0>, VarStringlet<255>, BiStringlet<0>, BiStringlet<1>, PolyStringlet<0>, PolyStringlet<1>, PolyStringlet<64>)
         ()
     }
     from_stringlet! {
@@ -96,41 +96,41 @@ fn from_stringlet() {
             (v 1: "x"),
             (v 2: "x"),
             (v 3: "x"),
-            (t: "x"),
-            (t 2: "x"),
-            (t 2: "\0"),
-            (s: "x"),
-            (s 2: "x"),
-            (s 2: "\0"),
-            (s 3: "x"),
+            (b: "x"),
+            (b 2: "x"),
+            (b 2: "\0"),
+            (p: "x"),
+            (p 2: "x"),
+            (p 2: "\0"),
+            (p 3: "x"),
             ("y"),
             (v: "y"),
             (v 2: "y"),
             (v 3: "y"),
-            (t: "y"),
-            (t 2: "y"),
-            (s: "y"),
-            (s 2: "y"),
-            (s 3: "y"),
+            (b: "y"),
+            (b 2: "y"),
+            (p: "y"),
+            (p 2: "y"),
+            (p 3: "y"),
         )
-        (FixStringlet<2>, TrimStringlet<3>)
-        (FixStringlet<1>, VarStringlet<1>, VarStringlet<255>, TrimStringlet<1>, TrimStringlet<2>, SlimStringlet<1>, SlimStringlet<2>, SlimStringlet<64>)
-        (FixStringlet<0>, VarStringlet<0>, TrimStringlet<0>, SlimStringlet<0>)
+        (UniStringlet<2>, BiStringlet<3>)
+        (UniStringlet<1>, VarStringlet<1>, VarStringlet<255>, BiStringlet<1>, BiStringlet<2>, PolyStringlet<1>, PolyStringlet<2>, PolyStringlet<64>)
+        (UniStringlet<0>, VarStringlet<0>, BiStringlet<0>, PolyStringlet<0>)
     }
     from_stringlet! {
         (
             (65: &"x".repeat(65)),
         )
-        (FixStringlet<66>, TrimStringlet<67>)
-        (FixStringlet<65>, VarStringlet<65>, TrimStringlet<65>)
-        (FixStringlet<64>, VarStringlet<64>, TrimStringlet<64>, SlimStringlet<64>)
+        (UniStringlet<66>, BiStringlet<67>)
+        (UniStringlet<65>, VarStringlet<65>, BiStringlet<65>)
+        (UniStringlet<64>, VarStringlet<64>, BiStringlet<64>, PolyStringlet<64>)
     }
     from_stringlet! {
         (
             (256: &"x".repeat(256)),
         )
-        (FixStringlet<257>, TrimStringlet<258>)
-        (FixStringlet<256>, TrimStringlet<256>)
-        (FixStringlet<255>, VarStringlet<255>, TrimStringlet<255>)
+        (UniStringlet<257>, BiStringlet<258>)
+        (UniStringlet<256>, BiStringlet<256>)
+        (UniStringlet<255>, VarStringlet<255>, BiStringlet<255>)
     }
 }

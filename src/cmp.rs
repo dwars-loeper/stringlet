@@ -24,7 +24,7 @@ impl_for! {
         /// Workaround for neither being able to `type Self2 = …<…>` nor to make this expr a const.
         macro_rules! low {
             ($t:ty, $size:ident) => {
-                $size.saturating_sub(if <$t>::TRIM { 1 } else if <$t>::SLIM { 64 } else { 256 })
+                $size.saturating_sub(if <$t>::BI { 1 } else if <$t>::POLY { 64 } else { 256 })
             };
         }
 
@@ -37,15 +37,15 @@ impl_for! {
                 // Compare raw bytes, including the padding and len byte.
                 self.as_slice() == other.as_slice()
             } else {
-                // TRIM’s and SLIM’s padding make this valid, also comparing with FIX.
+                // BI’s and POLY’s padding make this valid, also comparing with UNI.
                 self.str == other.str[..]
             }
-        } else if Kind::FIX {
-            // Size differs, so both FIX can’t be same. Can only be same if SIZE falls within other’s range.
-            !Kind2::FIX &&
+        } else if Kind::UNI {
+            // Size differs, so both UNI can’t be same. Can only be same if SIZE falls within other’s range.
+            !Kind2::UNI &&
                 low!(Kind2, SIZE2) <= SIZE && SIZE <= SIZE2 &&
                 self.str == other.as_bytes()
-        } else if Kind2::FIX {
+        } else if Kind2::UNI {
             // Can only be same if other’s SIZE falls within self’s range.
             low!(Kind, SIZE) <= SIZE2 && SIZE2 <= SIZE &&
                 other.str == self.as_bytes()
@@ -73,7 +73,7 @@ impl_for! {
     fn eq(&self, other: &str) -> bool {
         if SIZE == 0 {
             other.is_empty()
-        } else if Kind::FIX {
+        } else if Kind::UNI {
             self.str == other.as_bytes()
         } else {
             self.as_bytes() == other.as_bytes()
@@ -119,10 +119,10 @@ impl_for! {
             if other.is_empty() { Ordering::Equal } else { Ordering::Less }
         } else if SIZE2 == 0 {
             if self.is_empty() { Ordering::Equal } else { Ordering::Greater }
-        } else if Kind::FIX {
+        } else if Kind::UNI {
             self.str[..]
-                .cmp(if Kind2::FIX { &other.str[..] } else { other.as_bytes() })
-        } else if Kind2::FIX {
+                .cmp(if Kind2::UNI { &other.str[..] } else { other.as_bytes() })
+        } else if Kind2::UNI {
             self.as_bytes().cmp(&other.str[..])
         } else {
             self.as_bytes().cmp(other.as_bytes())
@@ -146,7 +146,7 @@ impl_for! {
         if SIZE == 0 {
             Some(if other.is_empty() { Ordering::Equal } else { Ordering::Less })
         } else {
-            if Kind::FIX { &self.str[..] } else { self.as_bytes() }
+            if Kind::UNI { &self.str[..] } else { self.as_bytes() }
                 .partial_cmp(other.as_bytes())
         }
     }

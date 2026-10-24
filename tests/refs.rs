@@ -4,19 +4,19 @@ use stringlet::prelude::*;
 
 #[test]
 fn deref() {
-    let s = FixStringlet::<3>::try_from("Abc").unwrap();
+    let s = UniStringlet::<3>::try_from("Abc").unwrap();
     assert!(s.contains('b'));
     let s = VarStringlet::<4>::try_from("Abc").unwrap();
     assert!(s.contains('b'));
-    let s = TrimStringlet::<4>::try_from("Abc").unwrap();
+    let s = BiStringlet::<4>::try_from("Abc").unwrap();
     assert!(s.contains('b'));
-    let s = SlimStringlet::<4>::try_from("Abc").unwrap();
+    let s = PolyStringlet::<4>::try_from("Abc").unwrap();
     assert!(s.contains('b'));
 }
 
 #[test]
 fn as_ref() {
-    let s = FixStringlet::<1>::try_from("A").unwrap();
+    let s = UniStringlet::<1>::try_from("A").unwrap();
     let s: &str = s.as_ref();
     assert_eq!(s, "A");
 }
@@ -27,7 +27,7 @@ fn borrow() {
         ($a:ident = $in:expr, $size:literal) => {
             let $a = $in;
             let str: &str = $a.as_ref();
-            let slet: &FixStringlet<$size> = $a.as_ref();
+            let slet: &UniStringlet<$size> = $a.as_ref();
             assert_eq!(str.as_ptr(), slet.as_ptr(), "fail {}", stringify!($in));
         };
         ($a:expr) => {
@@ -45,5 +45,5 @@ fn borrow() {
 #[test]
 #[should_panic]
 fn panics_when_ref_too_long() {
-    let _: &FixStringlet<4> = "abc".as_ref();
+    let _: &UniStringlet<4> = "abc".as_ref();
 }

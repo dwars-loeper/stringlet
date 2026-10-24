@@ -4,25 +4,25 @@ use super::Stringlet;
 
 pub trait Kind {
     type ExtraLen: Copy + Clone;
-    const FIX: bool = false;
+    const UNI: bool = false;
     const VAR: bool = false;
-    const TRIM: bool = false;
-    const SLIM: bool = false;
+    const BI: bool = false;
+    const POLY: bool = false;
     const NAME: &str;
     const ABBR: u8;
 }
 
 /// Configure constructors of `Stringlet` to have only valid generic parameters.
 #[diagnostic::on_unimplemented(
-    message = "`VarStringlet<{SIZE}>` or `SlimStringlet<{SIZE}>` has excessive SIZE",
+    message = "`VarStringlet<{SIZE}>` or `PolyStringlet<{SIZE}>` has excessive SIZE",
     label = "SIZE must be `0..=255` or `0..=64`",
     note = "`VarStringlet` cannot be longer than 255 bytes. Consider using `String`!",
-    note = "`SlimStringlet` cannot be longer than 64 bytes. Consider using `VarStringlet`!"
+    note = "`PolyStringlet` cannot be longer than 64 bytes. Consider using `VarStringlet`!"
 )]
 #[doc(hidden)]
 pub trait Config<Kind, const SIZE: usize = 16> {}
 
-impl<const SIZE: usize> Config<Fix, SIZE> for FixStringlet<SIZE> {}
+impl<const SIZE: usize> Config<Uni, SIZE> for UniStringlet<SIZE> {}
 
 #[diagnostic::on_unimplemented(
     message = "`VarStringlet<{SIZE}>` has excessive SIZE",
@@ -33,16 +33,16 @@ pub trait VarConfig<const SIZE: usize> {}
 // VarConfig implemented by macro below
 impl<const SIZE: usize> Config<Var, SIZE> for VarStringlet<SIZE> where Self: VarConfig<SIZE> {}
 
-impl<const SIZE: usize> Config<Trim, SIZE> for TrimStringlet<SIZE> {}
+impl<const SIZE: usize> Config<Bi, SIZE> for BiStringlet<SIZE> {}
 
 #[diagnostic::on_unimplemented(
-    message = "`SlimStringlet<{SIZE}>` has excessive SIZE",
+    message = "`PolyStringlet<{SIZE}>` has excessive SIZE",
     label = "SIZE must be `0..=64`",
-    note = "`SlimStringlet` cannot be longer than 64 bytes. Consider using `VarStringlet`!"
+    note = "`PolyStringlet` cannot be longer than 64 bytes. Consider using `VarStringlet`!"
 )]
-pub trait SlimConfig<const SIZE: usize> {}
-// SlimConfig implemented by macro below
-impl<const SIZE: usize> Config<Slim, SIZE> for SlimStringlet<SIZE> where Self: SlimConfig<SIZE> {}
+pub trait PolyConfig<const SIZE: usize> {}
+// PolyConfig implemented by macro below
+impl<const SIZE: usize> Config<Poly, SIZE> for PolyStringlet<SIZE> where Self: PolyConfig<SIZE> {}
 
 macro_rules! config {
     (@@ $stringlet:ident $kind_config:ident $($size:tt)+) => {
@@ -53,7 +53,7 @@ macro_rules! config {
     (@ $stringlet:ident) => {};
     (@ $stringlet:ident $kind_config:ident 64) => {
         config![@@ $stringlet $kind_config
-            // for VarStringlet and SlimStringlet
+            // for VarStringlet and PolyStringlet
             0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
             32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60
             61 62 63 64
@@ -93,25 +93,25 @@ macro_rules! config {
     };
 }
 
-config!("Fix" ", i.e. bounds for array access are compiled in, hence it is fast.
+config!("Uni" ", i.e. bounds for array access are compiled in, hence it is fast.
 
 This is also produced by [`stringlet!(…)`](stringlet!()) without a kind specifier."
-    FixStringlet Fix FIX ());
+    UniStringlet Uni UNI ());
 config!("Variable" ", with one extra byte for the length.
     Speed differs for some content processing, where SIMD gives an advantage for multiples of some power of 2, e.g.
     `VarStringlet<32>`. While for copying the advantage can be at one less, e.g. `VarStringlet<31>`. Size must be `0..=255`.
 
 This is also produced by [`stringlet!(…)`](stringlet!()) with a kind specifier of `var` or `v`."
     VarStringlet Var VAR u8 VarConfig 255);
-config!("Trimmed" ", which optionally trims one last byte, useful for codes
+config!("Trimmed" ", which optionally bis one last byte, useful for codes
     with minimal length variation like [ISO 639](https://www.iso.org/iso-639-language-code). This is achieved by tagging
     an unused last byte with a UTF-8 niche. The length gets calculated branchlessly with very few ops.
 
-This is also produced by [`stringlet!(…)`](stringlet!()) with a kind specifier of `trim` or `t`."
-    TrimStringlet Trim TRIM ());
-config!("Slim variable" ", uses a UTF-8 niche: It projects the length into 6 bits of the last byte, when content is less
+This is also produced by [`stringlet!(…)`](stringlet!()) with a kind specifier of `bi` or `t`."
+    BiStringlet Bi BI ());
+config!("Poly variable" ", uses a UTF-8 niche: It projects the length into 6 bits of the last byte, when content is less
     than full size. Length must be `0..=64`. Though it is done branchlessly, there are a few more ops for length calculation.
     Hence this is the slowest, albeit by a small margin.
 
-This is also produced by [`stringlet!(…)`](stringlet!()) with a kind specifier of `slim` or `s`."
-    SlimStringlet Slim SLIM () SlimConfig 64);
+This is also produced by [`stringlet!(…)`](stringlet!()) with a kind specifier of `poly` or `s`."
+    PolyStringlet Poly POLY () PolyConfig 64);
