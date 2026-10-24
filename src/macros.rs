@@ -78,22 +78,22 @@ The optional configuration is kind and/or size, if present followed by a colon:
 
 |Long Spec \| |Short Spec \| |Type |
 |:---|:---|:---|
-| | |`FixStringlet<param.len()>`|
-|SIZE: | |`FixStringlet<SIZE>`|
+| | |`UniStringlet<param.len()>`|
+|SIZE: | |`UniStringlet<SIZE>`|
 |var: |v: |`VarStringlet<param.len()>`|
 |var SIZE: |v SIZE: |`VarStringlet<SIZE>`|
-|trim: |t: |`TrimStringlet<param.len()>`|
-|trim SIZE: |t SIZE: |`TrimStringlet<SIZE>`|
-|slim: |s: |`SlimStringlet<param.len()>`|
-|slim SIZE: |s SIZE: |`SlimStringlet<SIZE>`|
+|bi: |t: |`BiStringlet<param.len()>`|
+|bi SIZE: |t SIZE: |`BiStringlet<SIZE>`|
+|poly: |s: |`PolyStringlet<param.len()>`|
+|poly SIZE: |s SIZE: |`PolyStringlet<SIZE>`|
 |_: | |`Stringlet<_, _>`|
 
 These are equivalent:
 ```
-# use crate::stringlet::{FixStringlet, stringlet};
+# use crate::stringlet::{UniStringlet, stringlet};
 let s1 = stringlet!("abc");
-let s2: FixStringlet<3> = stringlet!(_: "abc");
-const S3: FixStringlet<3> = stringlet!(3: " abc ".trim_ascii());
+let s2: UniStringlet<3> = stringlet!(_: "abc");
+const S3: UniStringlet<3> = stringlet!(3: " abc ".trim_ascii());
 assert_eq!(s1, s2);
 assert_eq!(s2, S3);
 ```
@@ -109,7 +109,7 @@ assert_eq!(s2, S3);
 
 You can also provide several comma separated parameter-sets to get a tuple of stringlets:
 ```
-# use crate::stringlet::{FixStringlet, stringlet};
+# use crate::stringlet::{UniStringlet, stringlet};
 let tuple = stringlet!(("abc"), (3: " abc ".trim_ascii()));
 assert_eq!(tuple.0, tuple.1);
 ```
@@ -127,18 +127,18 @@ macro_rules! stringlet {
         $crate::stringlet!(var  $($rest)+)
     };
 
-    (trim  $($rest:tt)+) => {
-        $crate::stringlet_base!(param(Trim)  $($rest)+)
+    (bi  $($rest:tt)+) => {
+        $crate::stringlet_base!(param(Bi)  $($rest)+)
     };
-    (t  $($rest:tt)+) => {
-        $crate::stringlet!(trim  $($rest)+)
+    (b  $($rest:tt)+) => {
+        $crate::stringlet!(bi  $($rest)+)
     };
 
-    (slim $($rest:tt)+) => {
-        $crate::stringlet_base!(param(Slim)  $($rest)+)
+    (poly $($rest:tt)+) => {
+        $crate::stringlet_base!(param(Poly)  $($rest)+)
     };
-    (s  $($rest:tt)+) => {
-        $crate::stringlet!(slim  $($rest)+)
+    (p  $($rest:tt)+) => {
+        $crate::stringlet!(poly  $($rest)+)
     };
 
     ($(($($slet:tt)+)),* $(,)?) => {
@@ -146,10 +146,10 @@ macro_rules! stringlet {
     };
 
     ($size:tt:  $($rest:tt)+) => {
-        $crate::stringlet_base!(size(Fix $size)  $($rest)+)
+        $crate::stringlet_base!(size(Uni $size)  $($rest)+)
     };
     ($($rest:tt)+) => {
-        $crate::stringlet_base!(size(Fix)  $($rest)+)
+        $crate::stringlet_base!(size(Uni)  $($rest)+)
     };
 }
 
@@ -159,7 +159,7 @@ mod doctests {
     ```compile_fail
     # use crate::stringlet::stringlet;
         println!("FAILED should not see this");
-        let _: FixStringlet<2> = stringlet!(_: ""); // 0 is too short
+        let _: UniStringlet<2> = stringlet!(_: ""); // 0 is too short
     ```
     */
     fn macro_fixed_2_compile_fail() {}
@@ -168,7 +168,7 @@ mod doctests {
     ```compile_fail
     # use crate::stringlet::stringlet;
         println!("FAILED should not see this");
-        let _: [FixStringlet<2>; 2] = stringlet!(_: ["ok", ""]); // 0 is too short
+        let _: [UniStringlet<2>; 2] = stringlet!(_: ["ok", ""]); // 0 is too short
     ```
     */
     fn macro_fixed_array_compile_fail() {}
@@ -204,7 +204,7 @@ mod doctests {
     ```compile_fail
     # use crate::stringlet::stringlet;
         println!("FAILED should not see this");
-        stringlet!(trim 2: ""); // 0 is too short
+        stringlet!(bi 2: ""); // 0 is too short
     ```
     */
     fn macro_trim_2_compile_fail() {}
@@ -213,7 +213,7 @@ mod doctests {
     ```compile_fail
     # use crate::stringlet::stringlet;
         println!("FAILED should not see this");
-        stringlet!(trim: ["ok", ""]); // 0 is too short
+        stringlet!(bi: ["ok", ""]); // 0 is too short
     ```
     */
     fn macro_trim_array_compile_fail() {}
@@ -222,7 +222,7 @@ mod doctests {
     ```compile_fail
     # use crate::stringlet::stringlet;
         println!("FAILED should not see this");
-        stringlet!(trim 2: ["ok", ""]); // 0 is too short
+        stringlet!(bi 2: ["ok", ""]); // 0 is too short
     ```
     */
     fn macro_trim_array_2_compile_fail() {}
@@ -231,10 +231,10 @@ mod doctests {
     ```compile_fail
     # use crate::stringlet::stringlet;
         println!("FAILED should not see this");
-        stringlet!(slim: "0123456789_123456789_123456789_123456789_123456789_123456789_1234"); // 65 is too long
+        stringlet!(poly: "0123456789_123456789_123456789_123456789_123456789_123456789_1234"); // 65 is too long
     ```
     */
-    fn macro_slim_65_compile_fail() {} // SlimStringlet<65> is too long
+    fn macro_slim_65_compile_fail() {} // PolyStringlet<65> is too long
 }
 
 #[cfg(test)]
@@ -244,59 +244,56 @@ mod tests {
     }
     #[test]
     fn all_types() {
-        cmp(stringlet!("aha"), "FixStringlet<3> { str: \"aha\" }");
+        cmp(stringlet!("aha"), "UniStringlet<3> { str: \"aha\" }");
         cmp(stringlet!(var: "aha"), "VarStringlet<3> { str: \"aha\" }");
-        cmp(stringlet!(trim: "aha"), "TrimStringlet<3> { str: \"aha\" }");
-        cmp(stringlet!(slim: "aha"), "SlimStringlet<3> { str: \"aha\" }");
+        cmp(stringlet!(bi: "aha"), "BiStringlet<3> { str: \"aha\" }");
+        cmp(stringlet!(poly: "aha"), "PolyStringlet<3> { str: \"aha\" }");
 
-        cmp(stringlet!(5: "aha45"), "FixStringlet<5> { str: \"aha45\" }");
+        cmp(stringlet!(5: "aha45"), "UniStringlet<5> { str: \"aha45\" }");
         cmp(stringlet!(var 5: "aha"), "VarStringlet<5> { str: \"aha\" }");
+        cmp(stringlet!(bi 4: "aha"), "BiStringlet<4> { str: \"aha\" }");
         cmp(
-            stringlet!(trim 4: "aha"),
-            "TrimStringlet<4> { str: \"aha\" }",
-        );
-        cmp(
-            stringlet!(slim 5: "aha"),
-            "SlimStringlet<5> { str: \"aha\" }",
+            stringlet!(poly 5: "aha"),
+            "PolyStringlet<5> { str: \"aha\" }",
         );
 
         cmp(
             stringlet!(["aha", "oho"]),
-            "[FixStringlet<3> { str: \"aha\" }, FixStringlet<3> { str: \"oho\" }]",
+            "[UniStringlet<3> { str: \"aha\" }, UniStringlet<3> { str: \"oho\" }]",
         );
         cmp(
             stringlet!(var: ["aha", "oh"]),
             "[VarStringlet<3> { str: \"aha\" }, VarStringlet<3> { str: \"oh\" }]",
         );
         cmp(
-            stringlet!(trim: ["aha", "oh"]),
-            "[TrimStringlet<3> { str: \"aha\" }, TrimStringlet<3> { str: \"oh\" }]",
+            stringlet!(bi: ["aha", "oh"]),
+            "[BiStringlet<3> { str: \"aha\" }, BiStringlet<3> { str: \"oh\" }]",
         );
         cmp(
-            stringlet!(slim: ["aha", "oh"]),
-            "[SlimStringlet<3> { str: \"aha\" }, SlimStringlet<3> { str: \"oh\" }]",
+            stringlet!(poly: ["aha", "oh"]),
+            "[PolyStringlet<3> { str: \"aha\" }, PolyStringlet<3> { str: \"oh\" }]",
         );
 
         cmp(
             stringlet!(3: ["aha", "oho"]),
-            "[FixStringlet<3> { str: \"aha\" }, FixStringlet<3> { str: \"oho\" }]",
+            "[UniStringlet<3> { str: \"aha\" }, UniStringlet<3> { str: \"oho\" }]",
         );
         cmp(
             stringlet!(var 5: ["aha", "oh"]),
             "[VarStringlet<5> { str: \"aha\" }, VarStringlet<5> { str: \"oh\" }]",
         );
         cmp(
-            stringlet!(trim 4: ["aha", "oho"]),
-            "[TrimStringlet<4> { str: \"aha\" }, TrimStringlet<4> { str: \"oho\" }]",
+            stringlet!(bi 4: ["aha", "oho"]),
+            "[BiStringlet<4> { str: \"aha\" }, BiStringlet<4> { str: \"oho\" }]",
         );
         cmp(
-            stringlet!(slim 5: ["aha", "oh"]),
-            "[SlimStringlet<5> { str: \"aha\" }, SlimStringlet<5> { str: \"oh\" }]",
+            stringlet!(poly 5: ["aha", "oh"]),
+            "[PolyStringlet<5> { str: \"aha\" }, PolyStringlet<5> { str: \"oh\" }]",
         );
 
         cmp(
-            stringlet!(("aha"), (trim 4: "aha"), (slim 5: ["aha", "oh"])),
-            "(FixStringlet<3> { str: \"aha\" }, TrimStringlet<4> { str: \"aha\" }, [SlimStringlet<5> { str: \"aha\" }, SlimStringlet<5> { str: \"oh\" }])",
+            stringlet!(("aha"), (bi 4: "aha"), (poly 5: ["aha", "oh"])),
+            "(UniStringlet<3> { str: \"aha\" }, BiStringlet<4> { str: \"aha\" }, [PolyStringlet<5> { str: \"aha\" }, PolyStringlet<5> { str: \"oh\" }])",
         );
     }
 }

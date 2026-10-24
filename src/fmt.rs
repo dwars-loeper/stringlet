@@ -33,7 +33,7 @@ impl_for! {
                 for i in len..SIZE-1 {
                     write!(fmt, ", {}", self.str[i])?;
                 }
-                if Kind::SLIM || Kind::TRIM {
+                if Kind::POLY || Kind::BI {
                     write!(fmt, ", 0b11_{:06b}]", self.last() ^ TAG)?;
                 } else {
                     write!(fmt, ", {}]", self.last())?;
@@ -73,11 +73,11 @@ mod tests {
     #[test]
     fn error_display() {
         assert_eq!(
-            FixStringlet::<1>::from_str("").unwrap_err().to_string(),
+            UniStringlet::<1>::from_str("").unwrap_err().to_string(),
             "too short"
         );
         assert_eq!(
-            FixStringlet::<0>::from_str("a").unwrap_err().to_string(),
+            UniStringlet::<0>::from_str("a").unwrap_err().to_string(),
             "too long"
         );
     }

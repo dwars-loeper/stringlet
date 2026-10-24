@@ -8,15 +8,15 @@ impl<Kind: crate::Kind, const SIZE: usize> Stringlet<Kind, SIZE>
 where
     Self: Config<Kind, SIZE>,
 {
-    /** Create an empty `Self`. Will panic if type can’t be empty, e.g. `FixStringlet<1>` or  `TrimStringlet<2>` */
+    /** Create an empty `Self`. Will panic if type can’t be empty, e.g. `UniStringlet<1>` or  `BiStringlet<2>` */
     #[inline(always)]
     #[must_use]
     pub const fn new() -> Self {
         const {
-            if Kind::FIX {
-                assert!(SIZE == 0, "FixStringlet<1> or bigger cannot be empty");
-            } else if Kind::TRIM {
-                assert!(SIZE <= 1, "TrimStringlet<2> or bigger cannot be empty");
+            if Kind::UNI {
+                assert!(SIZE == 0, "UniStringlet<1> or bigger cannot be empty");
+            } else if Kind::BI {
+                assert!(SIZE <= 1, "BiStringlet<2> or bigger cannot be empty");
             }
         }
         // SAFETY always short enough and no bytes that can have a UTF-8 error
@@ -44,12 +44,12 @@ where
 
     /**
     ```
-    # use stringlet::{FixStringlet, Result};
-    let abcd = unsafe { FixStringlet::<4>::from_utf8(b"Abcd") }?;
+    # use stringlet::{UniStringlet, Result};
+    let abcd = unsafe { UniStringlet::<4>::from_utf8(b"Abcd") }?;
     assert_eq!(abcd, "Abcd");
-    assert!(FixStringlet::<0>::from_utf8(b"A").is_err());
-    assert!(FixStringlet::<1>::from_utf8(b"").is_err());
-    assert!(FixStringlet::<1>::from_utf8(b"\xFF").is_err());
+    assert!(UniStringlet::<0>::from_utf8(b"A").is_err());
+    assert!(UniStringlet::<1>::from_utf8(b"").is_err());
+    assert!(UniStringlet::<1>::from_utf8(b"\xFF").is_err());
     # Result::Ok(())
     ```
     */
@@ -69,9 +69,9 @@ where
 
     /**
     ```
-    # use stringlet::FixStringlet;
-    const ABCD: FixStringlet<4> =
-        unsafe { FixStringlet::from_utf8_unchecked(b"Abcd") };
+    # use stringlet::UniStringlet;
+    const ABCD: UniStringlet<4> =
+        unsafe { UniStringlet::from_utf8_unchecked(b"Abcd") };
     assert_eq!(ABCD, "Abcd");
     ```
     # Safety
@@ -90,7 +90,7 @@ where
             if Kind::VAR {
                 me.add(bytes_len).write_bytes(0, SIZE - bytes_len);
                 me.add(SIZE).write(bytes_len as _);
-            } else if !Kind::FIX && SIZE > 0 && SIZE > bytes_len {
+            } else if !Kind::UNI && SIZE > 0 && SIZE > bytes_len {
                 me.add(bytes_len).write_bytes(0, SIZE - bytes_len - 1);
                 let tail = TAG | (SIZE - bytes_len) as u8;
                 me.add(SIZE - 1).write(tail);
@@ -101,10 +101,10 @@ where
 
     /**
     ```
-    # use stringlet::{FixStringlet, Result};
-    let abcd = FixStringlet::from_utf8_bytes([b'A', b'b', b'c', b'd'])?;
+    # use stringlet::{UniStringlet, Result};
+    let abcd = UniStringlet::from_utf8_bytes([b'A', b'b', b'c', b'd'])?;
     assert_eq!(abcd, "Abcd");
-    assert!(FixStringlet::from_utf8_bytes([0xFF]).is_err());
+    assert!(UniStringlet::from_utf8_bytes([0xFF]).is_err());
     # Result::Ok(())
     ```
     */
@@ -119,10 +119,10 @@ where
 
     /**
     ```
-    # use stringlet::FixStringlet;
-    # unsafe { FixStringlet::from_utf8_bytes_unchecked([]) }; // for llvm-cov
-    const ABCD: FixStringlet<4> =
-        unsafe { FixStringlet::from_utf8_bytes_unchecked([b'A', b'b', b'c', b'd']) };
+    # use stringlet::UniStringlet;
+    # unsafe { UniStringlet::from_utf8_bytes_unchecked([]) }; // for llvm-cov
+    const ABCD: UniStringlet<4> =
+        unsafe { UniStringlet::from_utf8_bytes_unchecked([b'A', b'b', b'c', b'd']) };
     assert_eq!(ABCD, "Abcd");
     ```
     # Safety
@@ -143,10 +143,10 @@ where
 
     /**
     ```
-    # use stringlet::{FixStringlet, Result};
-    let abcd = FixStringlet::from_utf8_slice(b"Abcd")?;
+    # use stringlet::{UniStringlet, Result};
+    let abcd = UniStringlet::from_utf8_slice(b"Abcd")?;
     assert_eq!(abcd, "Abcd");
-    assert!(FixStringlet::from_utf8_slice(b"\xFF").is_err());
+    assert!(UniStringlet::from_utf8_slice(b"\xFF").is_err());
     # Result::Ok(())
     ```
     */
@@ -161,10 +161,10 @@ where
 
     /**
     ```
-    # use stringlet::FixStringlet;
-    # unsafe { FixStringlet::from_utf8_slice_unchecked(b"") }; // for llvm-cov
-    const ABCD: FixStringlet<4> =
-        unsafe { FixStringlet::from_utf8_slice_unchecked(b"Abcd") };
+    # use stringlet::UniStringlet;
+    # unsafe { UniStringlet::from_utf8_slice_unchecked(b"") }; // for llvm-cov
+    const ABCD: UniStringlet<4> =
+        unsafe { UniStringlet::from_utf8_slice_unchecked(b"Abcd") };
     assert_eq!(ABCD, "Abcd");
     ```
     # Safety
@@ -187,9 +187,9 @@ where
         } else if Kind::ABBR == Kind2::ABBR {
             Ok(unsafe { Self::from_utf8_unchecked(str.as_bytes()) })
         } else if !Kind2::VAR
-            && (Kind::FIX && str.len() == SIZE
-                || Kind::TRIM && (Kind2::FIX || Kind2::SLIM && str.len() >= SIZE.saturating_sub(1))
-                || Kind::SLIM)
+            && (Kind::UNI && str.len() == SIZE
+                || Kind::BI && (Kind2::UNI || Kind2::POLY && str.len() >= SIZE.saturating_sub(1))
+                || Kind::POLY)
         {
             // SAFETY we checked the length and already had UTF-8
             Ok(unsafe { Self::from_utf8_unchecked(str.as_slice()) })
@@ -215,12 +215,12 @@ where
     }
 
     pub(crate) const fn fits(len: usize) -> Result<()> {
-        if Kind::FIX && len == SIZE {
+        if Kind::UNI && len == SIZE {
             Ok(())
         } else if len > SIZE {
             cold_path();
             Err(TooLong)
-        } else if Kind::VAR || Kind::SLIM || Kind::TRIM && len >= const { SIZE.saturating_sub(1) } {
+        } else if Kind::VAR || Kind::POLY || Kind::BI && len >= const { SIZE.saturating_sub(1) } {
             Ok(())
         } else {
             cold_path();
@@ -273,28 +273,28 @@ impl_for! {
 mod doctests {
     /**
     ```compile_fail
-    _ = stringlet::FixStringlet::<1>::new();
+    _ = stringlet::UniStringlet::<1>::new();
     ```
     */
     fn stringlet_1_new_compile_fail() {}
 
     /**
     ```compile_fail
-    let _x: stringlet::FixStringlet<1> = Default::default();
+    let _x: stringlet::UniStringlet<1> = Default::default();
     ```
     */
     fn stringlet_1_default_compile_fail() {}
 
     /**
     ```compile_fail
-    _ = stringlet::TrimStringlet::<2>::new();
+    _ = stringlet::BiStringlet::<2>::new();
     ```
     */
     fn trim_stringlet_2_new_compile_fail() {}
 
     /**
     ```compile_fail
-    let _x: stringlet::TrimStringlet<2> = Default::default();
+    let _x: stringlet::BiStringlet<2> = Default::default();
     ```
     */
     fn trim_stringlet_2_default_compile_fail() {}
@@ -315,14 +315,14 @@ mod doctests {
 
     /**
     ```compile_fail
-    _ = stringlet::SlimStringlet::<65>::new();
+    _ = stringlet::PolyStringlet::<65>::new();
     ```
     */
     fn slim_stringlet_65_new_compile_fail() {}
 
     /**
     ```compile_fail
-    let _x: stringlet::SlimStringlet<65> = Default::default();
+    let _x: stringlet::PolyStringlet<65> = Default::default();
     ```
     */
     fn slim_stringlet_65_default_compile_fail() {}
@@ -334,11 +334,11 @@ mod tests {
 
     #[test]
     fn fits() {
-        assert!(FixStringlet::<0>::fits(0).is_ok());
-        assert!(FixStringlet::<0>::fits(1).is_err());
-        assert!(FixStringlet::<1>::fits(1).is_ok());
-        assert!(FixStringlet::<1>::fits(0).is_err());
-        assert!(FixStringlet::<256>::fits(256).is_ok());
+        assert!(UniStringlet::<0>::fits(0).is_ok());
+        assert!(UniStringlet::<0>::fits(1).is_err());
+        assert!(UniStringlet::<1>::fits(1).is_ok());
+        assert!(UniStringlet::<1>::fits(0).is_err());
+        assert!(UniStringlet::<256>::fits(256).is_ok());
 
         assert!(VarStringlet::<0>::fits(0).is_ok());
         assert!(VarStringlet::<0>::fits(1).is_err());
@@ -348,20 +348,20 @@ mod tests {
         assert!(VarStringlet::<255>::fits(0).is_ok());
         assert!(VarStringlet::<255>::fits(255).is_ok());
 
-        assert!(TrimStringlet::<0>::fits(0).is_ok());
-        assert!(TrimStringlet::<0>::fits(1).is_err());
-        assert!(TrimStringlet::<1>::fits(0).is_ok());
-        assert!(TrimStringlet::<1>::fits(1).is_ok());
-        assert!(TrimStringlet::<2>::fits(0).is_err());
-        assert!(TrimStringlet::<256>::fits(255).is_ok());
-        assert!(TrimStringlet::<256>::fits(256).is_ok());
+        assert!(BiStringlet::<0>::fits(0).is_ok());
+        assert!(BiStringlet::<0>::fits(1).is_err());
+        assert!(BiStringlet::<1>::fits(0).is_ok());
+        assert!(BiStringlet::<1>::fits(1).is_ok());
+        assert!(BiStringlet::<2>::fits(0).is_err());
+        assert!(BiStringlet::<256>::fits(255).is_ok());
+        assert!(BiStringlet::<256>::fits(256).is_ok());
 
-        assert!(SlimStringlet::<0>::fits(0).is_ok());
-        assert!(SlimStringlet::<0>::fits(1).is_err());
-        assert!(SlimStringlet::<1>::fits(1).is_ok());
-        assert!(SlimStringlet::<1>::fits(0).is_ok());
-        assert!(SlimStringlet::<2>::fits(0).is_ok());
-        assert!(SlimStringlet::<64>::fits(0).is_ok());
-        assert!(SlimStringlet::<64>::fits(64).is_ok());
+        assert!(PolyStringlet::<0>::fits(0).is_ok());
+        assert!(PolyStringlet::<0>::fits(1).is_err());
+        assert!(PolyStringlet::<1>::fits(1).is_ok());
+        assert!(PolyStringlet::<1>::fits(0).is_ok());
+        assert!(PolyStringlet::<2>::fits(0).is_ok());
+        assert!(PolyStringlet::<64>::fits(0).is_ok());
+        assert!(PolyStringlet::<64>::fits(64).is_ok());
     }
 }

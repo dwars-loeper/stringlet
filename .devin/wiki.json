@@ -44,8 +44,8 @@
       ]
     },
     {
-      "title": "FixStringlet (Fix-Size)",
-      "purpose": "Deep dive into FixStringlet<SIZE>: fixed-length strings, compiled bounds, fastest variant, use cases and examples.",
+      "title": "UniStringlet (Uni-Size)",
+      "purpose": "Deep dive into UniStringlet<SIZE>: fixed-length strings, compiled bounds, fastest variant, use cases and examples.",
       "parent": "String Type Variants",
       "page_notes": [
         {
@@ -64,8 +64,8 @@
       ]
     },
     {
-      "title": "TrimStringlet (Optional Trim)",
-      "purpose": "Cover TrimStringlet<SIZE>: UTF-8 niche for optional 1-byte trim, branchless length calculation, ideal for minimal variation.",
+      "title": "BiStringlet (Optional Bi)",
+      "purpose": "Cover BiStringlet<SIZE>: UTF-8 niche for optional 1-byte bi, branchless length calculation, ideal for minimal variation.",
       "parent": "String Type Variants",
       "page_notes": [
         {
@@ -74,8 +74,8 @@
       ]
     },
     {
-      "title": "SlimStringlet (6-bit Length)",
-      "purpose": "Detail SlimStringlet<SIZE>: 6-bit length encoding in UTF-8 niche, 0..=64 constraint, space-efficient for short strings.",
+      "title": "PolyStringlet (6-bit Length)",
+      "purpose": "Detail PolyStringlet<SIZE>: 6-bit length encoding in UTF-8 niche, 0..=64 constraint, space-efficient for short strings.",
       "parent": "String Type Variants",
       "page_notes": [
         {
@@ -261,7 +261,7 @@
     },
     {
       "title": "Compile-Time Validation System",
-      "purpose": "Explain ConfigBase, VarConfig, SlimConfig traits, and how size constraints are enforced at compile time.",
+      "purpose": "Explain ConfigBase, VarConfig, PolyConfig traits, and how size constraints are enforced at compile time.",
       "parent": "Internal Architecture",
       "page_notes": [
         {

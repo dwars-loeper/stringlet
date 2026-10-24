@@ -4,18 +4,18 @@ use stringlet::prelude::*;
 
 #[test]
 fn big() {
-    let _f: FixStringlet<1024>;
+    let _f: UniStringlet<1024>;
     let _v: VarStringlet<255>;
-    let _s: SlimStringlet<64>;
+    let _s: PolyStringlet<64>;
 }
 
 #[test]
 fn as_str() -> stringlet::Result<()> {
-    let f: FixStringlet<7> = "A123456".try_into()?;
+    let f: UniStringlet<7> = "A123456".try_into()?;
     assert_eq!(f.as_str(), "A123456");
     let v: VarStringlet = "A123456".try_into()?;
     assert_eq!(v.as_str(), "A123456");
-    let s: SlimStringlet = "A123456".try_into()?;
+    let s: PolyStringlet = "A123456".try_into()?;
     assert_eq!(s.as_str(), "A123456");
     Ok(())
 }
@@ -23,27 +23,27 @@ fn as_str() -> stringlet::Result<()> {
 fn all_lengths<const SIZE: usize>()
 where
     VarStringlet<SIZE>: stringlet::VarConfig<SIZE>,
-    SlimStringlet<SIZE>: stringlet::SlimConfig<SIZE>,
+    PolyStringlet<SIZE>: stringlet::PolyConfig<SIZE>,
 {
     let str64s: [&str; 3] = [
         "0123456789_123456789_123456789_123456789_123456789_123456789_123",
         str::from_utf8(&[0; 64]).unwrap(),
         str::from_utf8(&[0x7f_u8; 64]).unwrap(),
     ];
-    let fix: FixStringlet<SIZE> = (&str64s[0][..SIZE]).try_into().unwrap();
-    assert_eq!(fix.is_empty(), SIZE == 0);
-    assert_eq!(fix.len(), SIZE);
+    let uni: UniStringlet<SIZE> = (&str64s[0][..SIZE]).try_into().unwrap();
+    assert_eq!(uni.is_empty(), SIZE == 0);
+    assert_eq!(uni.len(), SIZE);
     for len in 0..=SIZE {
         let str: VarStringlet<SIZE> = (&str64s[0][..len]).try_into().unwrap();
         assert_eq!(str.is_empty(), len == 0);
         assert_eq!(str.len(), len);
         for str64 in str64s {
             if len >= const { SIZE.saturating_sub(1) } {
-                let str: TrimStringlet<SIZE> = (&str64[..len]).try_into().unwrap();
+                let str: BiStringlet<SIZE> = (&str64[..len]).try_into().unwrap();
                 assert_eq!(str.is_empty(), len == 0);
                 assert_eq!(str.len(), len);
             }
-            let str: SlimStringlet<SIZE> = (&str64[..len]).try_into().unwrap();
+            let str: PolyStringlet<SIZE> = (&str64[..len]).try_into().unwrap();
             assert_eq!(str.is_empty(), len == 0);
             assert_eq!(str.len(), len);
         }
@@ -69,12 +69,12 @@ fn empty() {
     assert!(!stringlet!("a").is_empty());
     assert!(!stringlet!("ab").is_empty());
 
-    assert!(stringlet!(trim: "").is_empty());
-    assert!(stringlet!(trim 1: "").is_empty());
-    assert!(!stringlet!(trim: "a").is_empty());
-    assert!(!stringlet!(trim 2: "a").is_empty());
-    assert!(!stringlet!(trim: "ab").is_empty());
-    assert!(!stringlet!(trim 3: "ab").is_empty());
+    assert!(stringlet!(bi: "").is_empty());
+    assert!(stringlet!(bi 1: "").is_empty());
+    assert!(!stringlet!(bi: "a").is_empty());
+    assert!(!stringlet!(bi 2: "a").is_empty());
+    assert!(!stringlet!(bi: "ab").is_empty());
+    assert!(!stringlet!(bi 3: "ab").is_empty());
 
     assert!(stringlet!(var: "").is_empty());
     assert!(stringlet!(var 1: "").is_empty());
@@ -82,16 +82,16 @@ fn empty() {
     assert!(!stringlet!(var: "a").is_empty());
     assert!(!stringlet!(var: "ab").is_empty());
 
-    assert!(stringlet!(slim: "").is_empty());
-    assert!(stringlet!(slim 1: "").is_empty());
-    assert!(stringlet!(slim 2: "").is_empty());
-    assert!(!stringlet!(slim: "a").is_empty());
-    assert!(!stringlet!(slim: "ab").is_empty());
+    assert!(stringlet!(poly: "").is_empty());
+    assert!(stringlet!(poly 1: "").is_empty());
+    assert!(stringlet!(poly 2: "").is_empty());
+    assert!(!stringlet!(poly: "a").is_empty());
+    assert!(!stringlet!(poly: "ab").is_empty());
 }
 
 #[test]
 fn try_into() {
-    let _: SlimStringlet<1> = stringlet!("").try_into().unwrap();
-    let x: Result<SlimStringlet<0>, _> = stringlet!("x").try_into();
+    let _: PolyStringlet<1> = stringlet!("").try_into().unwrap();
+    let x: Result<PolyStringlet<0>, _> = stringlet!("x").try_into();
     assert!(x.is_err());
 }
