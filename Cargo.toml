@@ -1,12 +1,13 @@
 [package]
 name = "stringlet"
-version = "0.10.0"
-description = "A fast, cheap, compile-time constructible, Copy-able, kinda primitive inline string type with 4 variants."
+version = "0.11.0"
+description = "Four kinds of fast, cheap, compile-time constructible, Copy-able, primitive inline string."
 edition = "2024"
 license = "GPL-2.0-or-later OR Apache-2.0"
 authors = ["Daniel Pfeiffer <occitan@esperanto.org>"]
 repository = "https://github.com/dwars-loeper/stringlet"
-keywords = ["fast", "inline", "string"]
-categories = ["memory-management", "data-structures", "no-std"]
+keywords = ["const", "copy", "fast", "inline", "string"]
+categories = ["data-structures", "memory-management"]
+# , "no-std::no-alloc"
 
 [dependencies]

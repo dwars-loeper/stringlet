@@ -74,7 +74,7 @@ macro_rules! config {
             249 250 251 252 253 254 255
         ];
     };
-    ($msg1:literal $msg2:literal $stringlet:ident $kind:ident $const:ident $extra_len:tt $($kind_config:ident $size:tt)?) => {
+    ($msg1:literal $msg2:literal $msg3:literal $stringlet:ident $kind:ident $const:ident $extra_len:tt $($kind_config:ident $size:tt)?) => {
         #[derive(Copy, Clone)]
         pub enum $kind {}
 
@@ -85,7 +85,7 @@ macro_rules! config {
             const ABBR: u8 = stringify!($kind).as_bytes()[0]; // TODO NAME[0]
         }
 
-        #[doc = concat!($msg1, " length kind of `Stringlet`", $msg2)]
+        #[doc = concat!($msg1, "length kind of `Stringlet`, i.e. ", $msg2, "\n\nThis is also produced by [`stringlet!(…)`](crate::stringlet!()) ", $msg3)]
         $(#[doc = concat!("\n\nWhen instatiating this with a generic `SIZE`, you need to add this bound:\n```ignore\nwhere ",
             stringify!($stringlet), "<SIZE>: ", stringify!($kind_config), "<SIZE>\n```")])?
         pub type $stringlet<const SIZE: usize = 16> = Stringlet<$kind, SIZE>;
@@ -93,25 +93,24 @@ macro_rules! config {
     };
 }
 
-config!("Uni" ", i.e. bounds for array access are compiled in, hence it is fast.
-
-This is also produced by [`stringlet!(…)`](stringlet!()) without a kind specifier."
+config!("Uni-" "length is always equal to size. So bounds for array access are compiled in, hence fast."
+    "without a kind specifier."
     UniStringlet Uni UNI ());
-config!("Variable" ", with one extra byte for the length.
-    Speed differs for some content processing, where SIMD gives an advantage for multiples of some power of 2, e.g.
-    `VarStringlet<32>`. While for copying the advantage can be at one less, e.g. `VarStringlet<31>`. Size must be `0..=255`.
 
-This is also produced by [`stringlet!(…)`](stringlet!()) with a kind specifier of `var` or `v`."
-    VarStringlet Var VAR u8 VarConfig 255);
-config!("Trimmed" ", which optionally bis one last byte, useful for codes
+config!("Bi-" "two possible lengths, by optionally shaving one last byte, useful for codes
     with minimal length variation like [ISO 639](https://www.iso.org/iso-639-language-code). This is achieved by tagging
-    an unused last byte with a UTF-8 niche. The length gets calculated branchlessly with very few ops.
-
-This is also produced by [`stringlet!(…)`](stringlet!()) with a kind specifier of `bi` or `t`."
+    an unused last byte with a UTF-8 niche. The length gets calculated branchlessly with very few ops."
+    "with a kind specifier of `bi` or `b`."
     BiStringlet Bi BI ());
-config!("Poly variable" ", uses a UTF-8 niche: It projects the length into 6 bits of the last byte, when content is less
-    than full size. Length must be `0..=64`. Though it is done branchlessly, there are a few more ops for length calculation.
-    Hence this is the slowest, albeit by a small margin.
 
-This is also produced by [`stringlet!(…)`](stringlet!()) with a kind specifier of `poly` or `s`."
+config!("Poly-" "multiple lengths (currently 65) are possible. It uses a UTF-8 niche: It projects the length into 6 bits of the last byte, when content is less
+    than full size. Length must be `0..=64`. Though it is done branchlessly, there are a few more ops for length calculation.
+    Hence this is the slowest, albeit by a small margin."
+    "with a kind specifier of `poly` or `p`."
     PolyStringlet Poly POLY () PolyConfig 64);
+
+config!("Variable " "conventional length storage, with one extra byte for the length.
+    Speed differs for some content processing, where SIMD gives an advantage for multiples of some power of 2, e.g.
+    `VarStringlet<32>`. While for copying the advantage can be at one less, e.g. `VarStringlet<31>`. Size must be `0..=255`."
+    "with a kind specifier of `var` or `v`."
+    VarStringlet Var VAR u8 VarConfig 255);

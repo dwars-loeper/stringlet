@@ -2,10 +2,10 @@ use core::str::Utf8Error;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Error {
-    /// The stringlet is too long to fit in the given size.
-    TooLong,
-    /// The stringlet is too short to be valid.
-    TooShort,
+    /// The str of length `n` is too long to fit in the given size.
+    TooLong(usize),
+    /// The str of length `n` is too short to be valid.
+    TooShort(usize),
     Utf8Error(Utf8Error),
 }
 

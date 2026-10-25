@@ -57,9 +57,9 @@ fn try_from() {
 /// This takes a tuple of stringlets and converts them to various types. The middle ones shall succeed, the others don’t fit.
 macro_rules! from_stringlet {
     ($slet:ident ($($short:ty),+) ($($ok:ty),+) ($($long:ty),*)) => {
-        $(assert_eq!(<$short>::from_stringlet($slet).unwrap_err(), TooShort, "TooShort {} {:?}", stringify!($short), $slet);)+
+        $(assert_eq!(<$short>::from_stringlet($slet).unwrap_err(), TooShort($slet.len()), "TooShort {} {:?}", stringify!($short), $slet);)+
         $(assert_eq!(<$ok>::from_stringlet($slet).unwrap(), $slet, "Ok {} {:?}", stringify!($ok), $slet);)+
-        $(assert_eq!(<$long>::from_stringlet($slet).unwrap_err(), TooLong, "TooLong {} {:?}", stringify!($long), $slet);)*
+        $(assert_eq!(<$long>::from_stringlet($slet).unwrap_err(), TooLong($slet.len()), "TooLong {} {:?}", stringify!($long), $slet);)*
     };
     (($($slet:tt,)+) $short:tt $ok:tt $long:tt) => {
         $(

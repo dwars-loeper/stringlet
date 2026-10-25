@@ -27,9 +27,11 @@ pub use config::{
     VarConfig, VarStringlet,
 };
 
-pub(crate) use Error::*;
 pub use error::Error;
+
+/// Specialized `Result` type with `stringlet::Error`
 pub type Result<T> = core::result::Result<T, Error>;
+pub(crate) use Error::*;
 
 /**
 Magic sauce for a UTF-8 hack: a byte containing two high bits is not a valid last byte.

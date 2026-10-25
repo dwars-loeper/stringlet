@@ -4,13 +4,13 @@ A fast, cheap, compile-time constructible, `Copy`-able, kinda primitive inline s
 stack, you probably want to use smaller sizes, hence the name. No dependencies are planned, except for optional SerDe
 support, etc. The intention is to be no-std and no-alloc – which still requires feature-gating `String` interop.
 
-<div class="warning">
+<blockquote class="warning">
 This is an <b>alpha release</b>, but well tested by <code>mutants</code> and <code>miri</code>. Using it as an inline
 <code>str</code> works. The design is prepared for mutating functionality like <code>String</code>, but that needs to be
 implemented.
-</div>
+</blockquote>
 
-In my casual benchmarking it beats all other string kinds and crates nicely, or even spectacularly on some tests. There
+In my casual benchmarking it beats all other string types and crates nicely, or even spectacularly on some tests. There
 are four kinds sharing mostly the same code. They differ in length handling, which gives different trade-offs in only
 some operations, like `len()`, `as_ref()`, and `as_str()`. The first three names reflect the number of possible lengths,
 snuck into the payload:
@@ -35,10 +35,20 @@ snuck into the payload:
   content processing, where SIMD gives an advantage for multiples of some power of 2, e.g.  `VarStringlet<32>`. While
   for copying the advantage can be at one less, e.g. `VarStringlet<31>`. Length must be `0..=255`.
 
+<table><thead>
+  <tr><th></th><th>UniStringlet</th><th>BiStringlet</th><th>PolyStringlet</th><th>VarStringlet</th></tr>
+</thead>
+<tbody>
+  <tr><th>maximal <code>SIZE</code></th><td colspan='2'><code>usize::MAX</code></td><td><code>..=64</code></td><td><code>..=255</code></td></tr>
+  <tr><th><code>size_of</code></th><td colspan='3'><code>SIZE</code></td><td><code>SIZE + 1</code></td></tr>
+  <tr><th rowspan='2'><code>.len()</code></th><td>fixed</td><td colspan='3'>adaptive</td></tr>
+  <tr><td><code>SIZE</code></td><td><code>SIZE-1..=SIZE</code></td><td colspan='2'><code>..=SIZE</code></td></tr>
+</tbody></table>
+
 On most architectures, a `VarStringlet<63>` and all other `…Stringlet<64>` are the biggest that will fit into a CPU
 cache line. I.e. these or smaller can be handled without additional slow RAM access. The next hurdle is that
-`VarStringlet<127>` and all other `…Stringlet<128>` are the biggest for which LLVM will generate optimised move
-instructions.
+`VarStringlet<127>` and all other `…Stringlet<128>` are normally the biggest for which LLVM can generate optimised
+move instructions.
 
 N.B.: Variable size `VarStringlet` seems a competitor to [`fixedstr::str`](https://crates.io/crates/fixedstr),
 [`arrayvec::ArrayString`](https://crates.io/crates/arrayvec), and the semi-official
@@ -100,15 +110,12 @@ error[E0599]: `PolyStringlet<99>` has excessive SIZE
 that’s all there is to it. However when forwarding generic arguments to them you too have to bound by
 `stringlet::VarConfig<SIZE>` or `stringlet::PolyConfig<SIZE>`. I wish I could just use `<const SIZE: usize<0..=64>>`!
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/daniel-pfeiffer/stringlet) for a nice summary.
-
 ## Tradeoffs
 
-On a 64 bit host `Box<str>` has an in-place 8 byte overhead, `&str` costs 16 extra bytes and `String` even 24
-bytes. *(IMHO the latter should store its capacity on the heap, reducing the move cost by 33%. Make it a fat pointer
-transmutable to `&str`, with capacity tucked in at `pointer - 8`.)* Compared to this, only `VarStringlet` has any
-overhead, and only 1 byte. For accessing those standard string types, you always have an indirection (pointer
-dereference behind the scenes,) whereas stringlets are immediately there.
+On a 64 bit host `Box<str>` has an in-place 8 byte overhead, `&str` costs 16 extra bytes and `String` even has 24 bytes
+extra. For accessing those standard string types, you always have an indirection (pointer dereference behind the
+scenes,) whereas stringlets are immediately there. Compared to this, only `VarStringlet` has any overhead, and only 1
+byte.
 
 The downside is that, while the standard strings copy or move only the above mentioned overhead, stringlets must copy or
 move the whole content. What is an advantage for smaller stringlets, becomes more expensive the bigger they get. If you
@@ -159,9 +166,9 @@ is taken from the first parameter. For that it must be const, even if it is not 
 
 - [x] Run `cargo mutants` to find missing test constellations
 
-- [x] Run Miri on both `{x86_64,s390x}-unknown-linux-gnu` to find unsound code
+- [x] Run Miri on both `{x86_64,s390x}-unknown-linux-gnu` with and without tree borrows to guard against unsound code
 
-- [ ] Run [BorrowSanitizer](https://borrowsanitizer.com/)
+- [x] Run [BorrowSanitizer](https://borrowsanitizer.com/) to guard against unsound code
 
 - [ ] Prove it formally with [Verus](https://github.com/verus-lang/verus), [Creusot](https://creusot.rs/), [Aeneas](https://creusot.rs/), or [Kani](https://github.com/model-checking/kani)
 

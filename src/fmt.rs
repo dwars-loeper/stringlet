@@ -8,7 +8,7 @@ impl_for! {
     Display:
 
     fn fmt(&self, fmt: &mut Formatter<'_>) -> Result {
-        write!(fmt, "{}", self.as_str())
+        fmt.pad(self.as_str())
     }
 }
 
@@ -42,7 +42,7 @@ impl_for! {
                 write!(fmt, "str: {:?}", self.as_str())?;
             }
         } else {
-            write!(fmt, "{}", Kind::NAME)?;
+            fmt.write_str(Kind::NAME)?;
             if SIZE != 16 {
                 write!(fmt, "<{SIZE}>")?;
             }
@@ -52,15 +52,15 @@ impl_for! {
                 self.as_str()
             )?;
         }
-        write!(fmt, " }}")
+        fmt.write_str(" }")
     }
 }
 
 impl Display for Error {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> Result {
         match self {
-            TooLong => write!(fmt, "too long"),
-            TooShort => write!(fmt, "too short"),
+            TooLong(n) => write!(fmt, "len {n} too long"),
+            TooShort(n) => write!(fmt, "len {n} too short"),
             Utf8Error(e) => write!(fmt, "{e}"),
         }
     }
@@ -71,14 +71,28 @@ mod tests {
     use crate::*;
 
     #[test]
+    fn display() {
+        let a = UniStringlet::<1>::from_str("a").unwrap();
+        assert_eq!(a.to_string(), "a");
+        assert_eq!(format!("|{a:-<3}|"), "|a--|");
+        assert_eq!(format!("|{a:+>3}|"), "|++a|");
+    }
+
+    #[test]
     fn error_display() {
         assert_eq!(
             UniStringlet::<1>::from_str("").unwrap_err().to_string(),
-            "too short"
+            "len 0 too short"
         );
         assert_eq!(
             UniStringlet::<0>::from_str("a").unwrap_err().to_string(),
-            "too long"
+            "len 1 too long"
+        );
+        assert!(
+            VarStringlet::from_utf8_bytes([200])
+                .unwrap_err()
+                .to_string()
+                .contains("utf")
         );
     }
 }

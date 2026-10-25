@@ -171,7 +171,6 @@ where
     It is the callers responsibility to ensure that the content is UTF-8. */
     #[must_use]
     pub const unsafe fn from_utf8_slice_unchecked(str: &[u8; SIZE]) -> Self {
-        // TODO is there a benefit in replicating the body to eliminate the reference?
         // SAFETY It is the callers responsibility to ensure that the content is UTF-8.
         unsafe { Self::from_utf8_unchecked(str) }
     }
@@ -207,8 +206,8 @@ where
         match Self::fits(str.len()) {
             // SAFETY we checked the length
             Ok(()) => unsafe { Self::from_str_unchecked(str) },
-            Err(TooLong) => panic!("stringlet!(...): parameter too long for its type."),
-            Err(TooShort) => panic!("stringlet!(...): parameter too short for its type."),
+            Err(TooLong(_)) => panic!("stringlet!(...): parameter too long for its type."),
+            Err(TooShort(_)) => panic!("stringlet!(...): parameter too short for its type."),
             // SAFETY fits() never returns this
             Err(Utf8Error(_)) => unsafe { unreachable_unchecked() },
         }
@@ -219,12 +218,12 @@ where
             Ok(())
         } else if len > SIZE {
             cold_path();
-            Err(TooLong)
+            Err(TooLong(len))
         } else if Kind::VAR || Kind::POLY || Kind::BI && len >= const { SIZE.saturating_sub(1) } {
             Ok(())
         } else {
             cold_path();
-            Err(TooShort)
+            Err(TooShort(len))
         }
     }
 }
@@ -276,28 +275,42 @@ mod doctests {
     _ = stringlet::UniStringlet::<1>::new();
     ```
     */
-    fn stringlet_1_new_compile_fail() {}
+    fn uni_stringlet_1_new_compile_fail() {}
 
     /**
     ```compile_fail
     let _x: stringlet::UniStringlet<1> = Default::default();
     ```
     */
-    fn stringlet_1_default_compile_fail() {}
+    fn uni_stringlet_1_default_compile_fail() {}
 
     /**
     ```compile_fail
     _ = stringlet::BiStringlet::<2>::new();
     ```
     */
-    fn trim_stringlet_2_new_compile_fail() {}
+    fn bi_stringlet_2_new_compile_fail() {}
 
     /**
     ```compile_fail
     let _x: stringlet::BiStringlet<2> = Default::default();
     ```
     */
-    fn trim_stringlet_2_default_compile_fail() {}
+    fn bi_stringlet_2_default_compile_fail() {}
+
+    /**
+    ```compile_fail
+    _ = stringlet::PolyStringlet::<65>::new();
+    ```
+    */
+    fn poly_stringlet_65_new_compile_fail() {}
+
+    /**
+    ```compile_fail
+    let _x: stringlet::PolyStringlet<65> = Default::default();
+    ```
+    */
+    fn poly_stringlet_65_default_compile_fail() {}
 
     /**
     ```compile_fail
@@ -312,20 +325,6 @@ mod doctests {
     ```
     */
     fn var_stringlet_256_default_compile_fail() {}
-
-    /**
-    ```compile_fail
-    _ = stringlet::PolyStringlet::<65>::new();
-    ```
-    */
-    fn slim_stringlet_65_new_compile_fail() {}
-
-    /**
-    ```compile_fail
-    let _x: stringlet::PolyStringlet<65> = Default::default();
-    ```
-    */
-    fn slim_stringlet_65_default_compile_fail() {}
 }
 
 #[cfg(test)]
